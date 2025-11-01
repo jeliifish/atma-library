@@ -20,7 +20,7 @@ return new class extends Migration
             $table->string('email');
             $table->integer('no_telp');
             $table->date('tgl_daftar');
-            $table->binary('foto_profil')->nullable();
+            $table->string('url_foto_profil')->nullable();
             $table->enum('status',['aktif','nonaktif']);
             $table->timestamps();
         });

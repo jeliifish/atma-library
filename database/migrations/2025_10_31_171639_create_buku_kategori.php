@@ -16,6 +16,9 @@ return new class extends Migration
             $table->string('id_kategori');
             $table->timestamps();
 
+            // Cegah duplikasi pasangan
+            $table->primary(['id_buku', 'id_kategori']);
+
             $table->foreign('id_buku')
                     ->references('id_buku')
                     ->on('buku')
