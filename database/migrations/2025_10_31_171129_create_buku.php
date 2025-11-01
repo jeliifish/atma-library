@@ -18,6 +18,7 @@ return new class extends Migration
             $table->string('penerbit');
             $table->string('ISBN');
             $table->year('tahun_terbit');
+            $table->string('url_foto_cover')->nullable();
             $table->timestamps();
         });
     }
