@@ -18,7 +18,7 @@ return new class extends Migration
             $table->string('password');
             $table->string('alamat');
             $table->string('email');
-            $table->integer('no_telp');
+            $table->string('no_telp');
             $table->date('tgl_daftar');
             $table->string('url_foto_profil')->nullable();
             $table->enum('status',['aktif','nonaktif']);

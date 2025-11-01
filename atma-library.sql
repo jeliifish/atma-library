@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Waktu pembuatan: 31 Okt 2025 pada 18.40
+-- Waktu pembuatan: 01 Nov 2025 pada 19.54
 -- Versi server: 10.4.32-MariaDB
 -- Versi PHP: 8.2.12
 
@@ -18,7 +18,7 @@ SET time_zone = "+00:00";
 /*!40101 SET NAMES utf8mb4 */;
 
 --
--- Database: `atmalibrary`
+-- Database: `atma-library`
 --
 
 -- --------------------------------------------------------
@@ -34,6 +34,7 @@ CREATE TABLE `buku` (
   `penerbit` varchar(255) NOT NULL,
   `ISBN` varchar(255) NOT NULL,
   `tahun_terbit` year(4) NOT NULL,
+  `url_foto_cover` varchar(255) DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -115,7 +116,6 @@ CREATE TABLE `denda` (
 CREATE TABLE `detail_peminjaman` (
   `nomor_pinjam` bigint(20) UNSIGNED NOT NULL,
   `id_buku_copy` varchar(255) NOT NULL,
-  `id_member` bigint(20) UNSIGNED NOT NULL,
   `tgl_kembali` date NOT NULL,
   `status` enum('menunggu','disetujui','ditolak') NOT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
@@ -199,9 +199,9 @@ CREATE TABLE `member` (
   `password` varchar(255) NOT NULL,
   `alamat` varchar(255) NOT NULL,
   `email` varchar(255) NOT NULL,
-  `no_telp` int(11) NOT NULL,
+  `no_telp` varchar(255) NOT NULL,
   `tgl_daftar` date NOT NULL,
-  `foto_profil` blob DEFAULT NULL,
+  `url_foto_profil` varchar(255) DEFAULT NULL,
   `status` enum('aktif','nonaktif') NOT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL
@@ -224,18 +224,19 @@ CREATE TABLE `migrations` (
 --
 
 INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES
-(1, '0001_01_01_000000_create_users_table', 1),
-(2, '0001_01_01_000001_create_cache_table', 1),
-(3, '0001_01_01_000002_create_jobs_table', 1),
-(4, '2025_10_31_171129_create_buku', 1),
-(5, '2025_10_31_171445_create_kategori', 1),
-(6, '2025_10_31_171639_create_buku_kategori', 1),
-(7, '2025_10_31_171827_create_copy_buku', 1),
-(8, '2025_10_31_171940_create_member', 1),
-(9, '2025_10_31_172611_create_petugas', 1),
-(10, '2025_10_31_172851_create_peminjaman', 1),
-(11, '2025_10_31_173007_create_denda', 1),
-(12, '2025_10_31_173123_create_detail_peminjaman', 1);
+(92, '0001_01_01_000000_create_users_table', 1),
+(93, '0001_01_01_000001_create_cache_table', 1),
+(94, '0001_01_01_000002_create_jobs_table', 1),
+(95, '2025_10_31_171129_create_buku', 1),
+(96, '2025_10_31_171445_create_kategori', 1),
+(97, '2025_10_31_171639_create_buku_kategori', 1),
+(98, '2025_10_31_171827_create_copy_buku', 1),
+(99, '2025_10_31_171940_create_member', 1),
+(100, '2025_10_31_172611_create_petugas', 1),
+(101, '2025_10_31_172851_create_peminjaman', 1),
+(102, '2025_10_31_173007_create_denda', 1),
+(103, '2025_10_31_173123_create_detail_peminjaman', 1),
+(104, '2025_10_31_183156_create_personal_access_tokens_table', 1);
 
 -- --------------------------------------------------------
 
@@ -268,6 +269,25 @@ CREATE TABLE `peminjaman` (
 -- --------------------------------------------------------
 
 --
+-- Struktur dari tabel `personal_access_tokens`
+--
+
+CREATE TABLE `personal_access_tokens` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `tokenable_type` varchar(255) NOT NULL,
+  `tokenable_id` bigint(20) UNSIGNED NOT NULL,
+  `name` text NOT NULL,
+  `token` varchar(64) NOT NULL,
+  `abilities` text DEFAULT NULL,
+  `last_used_at` timestamp NULL DEFAULT NULL,
+  `expires_at` timestamp NULL DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Struktur dari tabel `petugas`
 --
 
@@ -279,7 +299,7 @@ CREATE TABLE `petugas` (
   `alamat` varchar(255) NOT NULL,
   `email` varchar(255) NOT NULL,
   `no_telp` varchar(255) NOT NULL,
-  `foto_profil` blob NOT NULL,
+  `url_foto_profil` blob NOT NULL,
   `status` enum('aktif','cuti') NOT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL
@@ -331,7 +351,7 @@ ALTER TABLE `buku`
 -- Indeks untuk tabel `buku_kategori`
 --
 ALTER TABLE `buku_kategori`
-  ADD KEY `buku_kategori_id_buku_foreign` (`id_buku`),
+  ADD PRIMARY KEY (`id_buku`,`id_kategori`),
   ADD KEY `buku_kategori_id_kategori_foreign` (`id_kategori`);
 
 --
@@ -365,8 +385,7 @@ ALTER TABLE `denda`
 --
 ALTER TABLE `detail_peminjaman`
   ADD KEY `detail_peminjaman_nomor_pinjam_foreign` (`nomor_pinjam`),
-  ADD KEY `detail_peminjaman_id_buku_copy_foreign` (`id_buku_copy`),
-  ADD KEY `detail_peminjaman_id_member_foreign` (`id_member`);
+  ADD KEY `detail_peminjaman_id_buku_copy_foreign` (`id_buku_copy`);
 
 --
 -- Indeks untuk tabel `failed_jobs`
@@ -421,6 +440,15 @@ ALTER TABLE `peminjaman`
   ADD KEY `peminjaman_id_petugas_foreign` (`id_petugas`);
 
 --
+-- Indeks untuk tabel `personal_access_tokens`
+--
+ALTER TABLE `personal_access_tokens`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `personal_access_tokens_token_unique` (`token`),
+  ADD KEY `personal_access_tokens_tokenable_type_tokenable_id_index` (`tokenable_type`,`tokenable_id`),
+  ADD KEY `personal_access_tokens_expires_at_index` (`expires_at`);
+
+--
 -- Indeks untuk tabel `petugas`
 --
 ALTER TABLE `petugas`
@@ -473,13 +501,19 @@ ALTER TABLE `member`
 -- AUTO_INCREMENT untuk tabel `migrations`
 --
 ALTER TABLE `migrations`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=105;
 
 --
 -- AUTO_INCREMENT untuk tabel `peminjaman`
 --
 ALTER TABLE `peminjaman`
   MODIFY `nomor_pinjam` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT untuk tabel `personal_access_tokens`
+--
+ALTER TABLE `personal_access_tokens`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT untuk tabel `petugas`
@@ -521,7 +555,6 @@ ALTER TABLE `denda`
 --
 ALTER TABLE `detail_peminjaman`
   ADD CONSTRAINT `detail_peminjaman_id_buku_copy_foreign` FOREIGN KEY (`id_buku_copy`) REFERENCES `copy_buku` (`id_buku_copy`) ON DELETE CASCADE ON UPDATE CASCADE,
-  ADD CONSTRAINT `detail_peminjaman_id_member_foreign` FOREIGN KEY (`id_member`) REFERENCES `member` (`id_member`) ON DELETE CASCADE ON UPDATE CASCADE,
   ADD CONSTRAINT `detail_peminjaman_nomor_pinjam_foreign` FOREIGN KEY (`nomor_pinjam`) REFERENCES `peminjaman` (`nomor_pinjam`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --

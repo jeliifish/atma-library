@@ -16,7 +16,7 @@ class MemberController extends Controller
                 'nama'       => 'required|string',
                 'username'   => 'required|string',
                 'email'      => 'required|email|',
-                'password'   => 'required|string|confirmed|min:8', // model akan auto-hash via $casts
+                'password'   => 'required|string|confirmed|min:8', 
                 'alamat'     => 'required|string|max:255',
                 'no_telp'    => 'required|string|max:30'
                 ],
