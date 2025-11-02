@@ -2,9 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
 use App\Models\Member;
 use App\Models\Petugas;
+
 
 class MemberController extends Controller
 {
@@ -78,8 +81,25 @@ class MemberController extends Controller
                 'message' => $e->getMessage(),
                 'data' => []
             ], 400);
+        }  
+    }
+
+    public function show()
+    {
+        $member = Auth::user();
+        if(!$member){
+            return response()->json([
+                'status' => false,
+                'message' => 'Member tidak ditemukan',
+                'data' => []
+            ], 404);
         }
-       
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Data member ditemukan',
+            'data' => $member
+        ], 200);
     }
 
      public function update(Request $request)
