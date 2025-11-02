@@ -13,6 +13,7 @@ Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth:sanc
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/member/profile', [MemberController::class, 'show']);
     Route::post('/member/profile/update', [MemberController::class, 'update']);
+    Route::delete('/member/profile/delete', [MemberController::class, 'destroy']);
 });
 
 // Route::get('/user', function (Request $request) {

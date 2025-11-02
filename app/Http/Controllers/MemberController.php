@@ -102,7 +102,7 @@ class MemberController extends Controller
         ], 200);
     }
 
-     public function update(Request $request)
+    public function update(Request $request)
     {
         try{
             $request->validate(
@@ -164,6 +164,34 @@ class MemberController extends Controller
                 'message' => $e->getMessage(),
                 'data' => []
             ], 400);
+        }
+    }
+
+    public function destroy()
+    {
+        try {
+            $member = Auth::user();
+
+            if (!$member) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Member tidak ditemukan'
+                ], 404);
+            }
+
+            // Hapus akun
+            $member->delete();
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Akun berhasil dihapus'
+            ], 200);
+
+        } catch (Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Gagal menghapus akun: ' . $e->getMessage()
+            ], 500);
         }
     }
 }
