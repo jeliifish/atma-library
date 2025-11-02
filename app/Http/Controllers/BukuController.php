@@ -101,4 +101,52 @@ class BukuController extends Controller
         }
     }
 
+    public function update(Request $request, $id_buku)
+    {
+        try {
+            // cek buku tersedia atau ngga
+            $buku = Buku::find($id_buku);
+
+            if (!$buku) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Buku tidak ditemukan.'
+                ], 404);
+            }
+
+            // Validasi data yang dikirim (hanya field yang diubah saja yang wajib)
+            $validated = $request->validate([
+                'judul' => 'sometimes|required|string|max:255',
+                'penulis' => 'sometimes|required|string|max:255',
+                'penerbit' => 'sometimes|required|string|max:255',
+                'ISBN' => 'sometimes|required|string|max:50|unique:buku,ISBN,' . $id_buku . ',id_buku',
+                'tahun_terbit' => 'sometimes|required|integer',
+                'url_foto_cover' => 'nullable|string|max:255'
+            ]);
+
+            // Update data
+            $buku->update($validated);
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Buku berhasil diperbarui.',
+                'data' => $buku
+            ], 200);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            
+            return response()->json([
+                'status' => false,
+                'message' => 'Validasi gagal.',
+                'errors' => $e->errors()
+            ], 422);
+
+        } catch (\Exception $e) {
+            
+            return response()->json([
+                'status' => false,
+                'message' => 'Terjadi kesalahan: ' . $e->getMessage()
+            ], 500);
+        }
+    }
 }
