@@ -81,4 +81,69 @@ class MemberController extends Controller
         }
        
     }
+
+     public function update(Request $request)
+    {
+        try{
+            $request->validate(
+                [
+                    'nama'       => 'sometimes|required|string',
+                    'username' => [
+                        'sometimes', 'required', 'string', 'max:50',
+                        Rule::unique('member','username')->ignore(Auth::id(), 'id_member'),
+                    ],
+
+                    'email' => [
+                        'sometimes', 'required', 'email', 'max:100',
+                        Rule::unique('member','email')->ignore(Auth::id(), 'id_member'),
+                    ],
+                    'alamat'     => 'sometimes|required|string|max:255',
+                    'no_telp'    => 'sometimes|required|string|max:30'
+                ]
+            );
+
+            $member = Auth::user();
+            if(!$member){
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Member tidak ditemukan',
+                    'data' => []
+                ], 404);
+            }
+
+            if($request->hasFile('url_foto_profil')){
+                $image = $request->url_foto_profil;
+                $imageName = $image->getClientOriginalName();
+                $image->move(public_path('storage/profile'), $imageName);
+                $member->update([
+                    'url_foto_profil' => 'profile/' . $imageName
+                ]);// path relatif dari public/
+            }else{
+                $imageName = $member->url_foto_profil;
+                $member->update([
+                    'url_foto_profil' => $imageName,
+                ]);
+            }
+
+            $member->update([
+                'nama' => $request->nama,
+                'email' => $request->email,
+                'no_telp' => $request->no_telp,
+                'alamat' => $request->alamat,
+            ]);
+
+            return response()->json([
+                'status'  => true,
+                'message' => 'Profil berhasil diperbarui',
+                'data'    => $member->fresh()
+            ], 200);
+
+        }catch(Exception $e){
+            return response()->json([
+                'status' => false,
+                'message' => $e->getMessage(),
+                'data' => []
+            ], 400);
+        }
+    }
 }
