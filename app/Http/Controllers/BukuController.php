@@ -124,7 +124,7 @@ class BukuController extends Controller
                 'url_foto_cover' => 'nullable|string|max:255'
             ]);
 
-            // Update data
+            //update
             $buku->update($validated);
 
             return response()->json([
@@ -149,4 +149,35 @@ class BukuController extends Controller
             ], 500);
         }
     }
+
+    public function destroy($id_buku)
+    {
+        try {
+            
+            $buku = Buku::find($id_buku);
+
+            if (!$buku) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Buku tidak ditemukan.'
+                ], 404);
+            }
+
+            //hapus
+            $buku->delete();
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Buku berhasil dihapus.'
+            ], 200);
+
+        } catch (\Exception $e) {
+            
+            return response()->json([
+                'status' => false,
+                'message' => 'Terjadi kesalahan saat menghapus buku: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
 }
