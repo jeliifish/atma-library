@@ -29,5 +29,49 @@ class BukuController extends Controller
         ], 200);
     }
 
+    public function store(Request $request)
+    {
+        try {
+            
+            $validated = $request->validate(
+                [
+                    'judul' => 'required|string|max:255',
+                    'penulis' => 'required|string|max:255',
+                    'penerbit' => 'required|string|max:255',
+                    'ISBN' => 'required|string|max:50|unique:buku,ISBN',
+                    'tahun_terbit' => 'required|integer|min:1000|max:' . date('Y'),
+                    'url_foto_cover' => 'nullable|string|max:255',
+                ],
+                [
+                    'judul.required' => 'Judul buku wajib diisi.',
+                    'penulis.required' => 'Nama penulis wajib diisi.',
+                    'penerbit.required' => 'Nama penerbit wajib diisi.',
+                    'ISBN.required' => 'Nomor ISBN wajib diisi.',
+                    'ISBN.unique' => 'Nomor ISBN sudah terdaftar.',
+                    'tahun_terbit.required' => 'Tahun terbit wajib diisi.',
+                    'tahun_terbit.integer' => 'Tahun terbit harus berupa angka.',
+                    'tahun_terbit.min' => 'Tahun terbit tidak valid.',
+                    'tahun_terbit.max' => 'Tahun terbit tidak boleh melebihi tahun sekarang.',
+                ]
+            );
+
+            $buku = Buku::create($validated);
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Buku berhasil ditambahkan',
+                'data' => $buku
+            ], 201);
+
+        } catch (Exception $e) {
+            
+            return response()->json([
+                'status' => false,
+                'message' => 'Terjadi kesalahan: ' . $e->getMessage(),
+                'data' => []
+            ], 500);
+        }
+    }
+
     
 }
