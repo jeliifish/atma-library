@@ -12,9 +12,13 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BukuController;
 
 Route::post('/register/member', [MemberController::class, 'store']);
-   Route::post('/register/petugas', [PetugasController::class, 'store']);
+Route::post('/register/petugas', [PetugasController::class, 'store']);
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
+
+// route public /api/buku/...
+Route::get('/buku', [BukuController::class, 'index']);
+Route::get('/buku/{id_buku}', [BukuController::class, 'show']);
 
 //route member /api/member/...
 Route::middleware(['auth:sanctum', MemberMiddleware::class])->prefix('member')->group(function () {
@@ -24,20 +28,19 @@ Route::middleware(['auth:sanctum', MemberMiddleware::class])->prefix('member')->
     Route::delete('/profile/delete', [MemberController::class, 'destroy']);
 });
 
-
 //route petugas /api/petugas/...
 Route::middleware(['auth:sanctum', PetugasMiddleware::class])->prefix('petugas')->group(function () {
  
     Route::get('/profile', [PetugasController::class, 'show']);
     Route::post('/profile/update', [PetugasController::class, 'update']);
     Route::delete('/profile/delete', [PetugasController::class, 'destroy']);
+
+    Route::post('/buku', [BukuController::class, 'store']);
+    Route::put('/buku/{id_buku}', [BukuController::class, 'update']);
+    Route::delete('/buku/{id_buku}', [BukuController::class, 'destroy']);
 });
 
-Route::get('/buku', [BukuController::class, 'index']);
-Route::post('/buku', [BukuController::class, 'store']);
-Route::get('/buku/{id_buku}', [BukuController::class, 'show']);
-Route::put('/buku/{id_buku}', [BukuController::class, 'update']);
-Route::delete('/buku/{id_buku}', [BukuController::class, 'destroy']);
+
 
 // Route::get('/user', function (Request $request) {
 //     return $request->user();
