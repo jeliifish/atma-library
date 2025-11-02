@@ -12,7 +12,7 @@ use App\Models\Petugas;
 use Exception;
 
 
-class MemberController extends Controller
+class PetugasController extends Controller
 {
     public function store(Request $request)
     {
@@ -62,18 +62,17 @@ class MemberController extends Controller
 
             $data = $validated;
 
-            $data['tgl_daftar'] = now()->toDateString();
             $data['status'] = 'aktif';
             $data['url_foto_profil'] = 'images/default-profile.jpeg'; // path relatif dari public/
 
-            $member = Member::create($data);
+            $petugas = Petugas::create($data);
             
-            $token = $member->createToken('api')->plainTextToken;
+            $token = $petugas->createToken('api')->plainTextToken;
 
             return response()->json([
                 'status' => true,
-                'message' => 'Member berhasil ditambahkan',
-                'member' => $member,
+                'message' => 'Petugas berhasil ditambahkan',
+                'petugas' => $petugas,
                 'token'   => $token
             ], 200);
 
@@ -88,60 +87,64 @@ class MemberController extends Controller
 
     public function show()
     {
-        $member = Auth::guard('member')->user();
-        if(!$member){
+        $petugas = Auth::guard('petugas')->user();
+        if(!$petugas){
             return response()->json([
                 'status' => false,
-                'message' => 'Member tidak ditemukan',
+                'message' => 'Petugas tidak ditemukan',
                 'data' => []
             ], 404);
         }
 
         return response()->json([
             'status' => true,
-            'message' => 'Data member ditemukan',
-            'data' => $member
+            'message' => 'Data Petugas ditemukan',
+            'data' => $petugas
         ], 200);
     }
 
     public function update(Request $request)
     {
         try{
-            
-            $member = Auth::guard('member')->user();
-            if(!$member){
+            $petugas = Auth::guard('petugas')->user();
+            if(!$petugas){
                 return response()->json([
                     'status' => false,
-                    'message' => 'Member tidak ditemukan',
+                    'message' => 'Petugas tidak ditemukan',
                     'data' => []
                 ], 404);
             }
 
-             $validator = Validator::make($request->all(),
+
+            $validator = Validator::make($request->all(),
                 [
                     'nama'       => 'sometimes|nullable|string',
                     'username' => [
                         'sometimes', 'nullable', 'string', 'max:50',
-                        Rule::unique('member','username')->ignore($member->id_member, 'id_member'),
+                        Rule::unique('petugas','username')->ignore($petugas->id_petugas, 'id_petugas'),
                     ],
 
                     'email' => [
                         'sometimes', 'nullable', 'email', 'max:100',
-                        Rule::unique('member','email')->ignore($member->id_member, 'id_member'),
+                        Rule::unique('petugas','email')->ignore($petugas->id_petugas, 'id_petugas'),
                     ],
                     'alamat'     => 'sometimes|nullable|string|max:255',
                     'no_telp'    => 'sometimes|nullable|string|max:30'
+                ],
+                [
+                    'email.unique'      => 'Email sudah digunakan.',
+                    'username.unique'   => 'Username sudah digunakan.',
                 ]
             );
 
             $validator->after(function ($v) use ($request) {
             if ($request->filled('username')) {
-                    if (DB::table('petugas')->where('username', $request->username)->exists()) {
+                    if (DB::table('member')->where('username', $request->username)->exists()) {
                         $v->errors()->add('username', 'Username sudah digunakan.');
                     }
                 }
                 if ($request->filled('email')) {
-                    if (DB::table('petugas')->where('email', $request->email)->exists()) {
+                    if (DB::table('member')->where('email', $request->email)->exists()) {
                         $v->errors()->add('email', 'Email sudah digunakan.');
                     }
                 }
@@ -156,27 +159,28 @@ class MemberController extends Controller
             }
 
             $data = $validator->validated();
-
+            
             if($request->hasFile('url_foto_profil')){
                 $image = $request->url_foto_profil;
                 $imageName = $image->getClientOriginalName();
                 $image->move(public_path('storage/profile'), $imageName);
-                $member->update([
+                $petugas->update([
                     'url_foto_profil' => 'profile/' . $imageName
                 ]);// path relatif dari public/
             }else{
-                $imageName = $member->url_foto_profil;
-                $member->update([
+                $imageName = $petugas->url_foto_profil;
+                $petugas->update([
                     'url_foto_profil' => $imageName,
                 ]);
             }
 
-            $member->update($data);
+
+            $petugas->update($data);
 
             return response()->json([
                 'status'  => true,
                 'message' => 'Profil berhasil diperbarui',
-                'data'    => $member->fresh()
+                'data'    => $petugas->fresh()
             ], 200);
 
         }catch(Exception $e){
@@ -191,18 +195,17 @@ class MemberController extends Controller
     public function destroy()
     {
         try {
-            $member = Auth::guard('member')->user();
+            $petugas = Auth::guard('petugas')->user();
 
-
-            if (!$member) {
+            if (!$petugas) {
                 return response()->json([
                     'status' => false,
-                    'message' => 'Member tidak ditemukan'
+                    'message' => 'petugas tidak ditemukan'
                 ], 404);
             }
 
             // Hapus akun
-            $member->delete();
+            $petugas->delete();
 
             return response()->json([
                 'status' => true,

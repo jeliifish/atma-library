@@ -14,7 +14,7 @@ class AuthController extends Controller
     {
         $member = Member::where('email', $request->email)->first();
         if ($member && Hash::check( $request->password, $member->password)) {
-            $token = $member->createToken('api')->plainTextToken;
+            $token = $member->createToken('member')->plainTextToken;
 
                 return response()->json([
                     'message' => 'Login berhasil',
@@ -24,8 +24,8 @@ class AuthController extends Controller
         }
 
         $petugas = Petugas::where('email', $request->email)->first();
-        if ($petugas && Hash::check( $request->email, $petugas->password)) {
-            $token = $petugas->createToken('api')->plainTextToken;
+        if ($petugas && Hash::check( $request->password, $petugas->password)) {
+            $token = $petugas->createToken('petugas')->plainTextToken;
 
                 return response()->json([
                     'message' => 'Login berhasil',
