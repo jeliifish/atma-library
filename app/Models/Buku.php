@@ -21,6 +21,26 @@ class Buku extends Model
         'url_foto_cover'
     ];
 
+    // === AUTO GENERATE ID BKU0001, BKU0002, ... ===
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($buku) {
+            if (!$buku->id_buku) {
+                $lastBuku = Buku::orderBy('id_buku', 'desc')->first();
+                if ($lastBuku) {
+                    $lastNumber = (int) substr($lastBuku->id_buku, 3);
+                    $nextNumber = $lastNumber + 1;
+                } else {
+                    $nextNumber = 1;
+                }
+
+                $buku->id_buku = 'BKU' . str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
+            }
+        });
+    }
+
     public function copyBuku()
     {
         return $this->hasMany(CopyBuku::class, 'id_buku', 'id_buku');
