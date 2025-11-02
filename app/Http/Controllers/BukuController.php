@@ -73,5 +73,32 @@ class BukuController extends Controller
         }
     }
 
-    
+    public function show($id_buku)
+    {
+        try {
+            $buku = Buku::find($id_buku);
+
+            if (!$buku) {
+                return response()->json([
+                    'status' => false,
+                    'message' => "Buku dengan ID $id_buku tidak ditemukan.",
+                    'data' => []
+                ], 404);
+            }
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Detail buku berhasil ditemukan.',
+                'data' => $buku
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Terjadi kesalahan server: ' . $e->getMessage(),
+                'data' => []
+            ], 500);
+        }
+    }
+
 }
