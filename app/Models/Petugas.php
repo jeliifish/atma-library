@@ -2,10 +2,13 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
+use Illuminate\Foundation\Auth\User as Authenticatable; 
+use Laravel\Sanctum\HasApiTokens;
+use Illuminate\Notifications\Notifiable;
 
-class Petugas extends Model
+class Petugas extends Authenticatable
 {
+    use HasApiTokens, Notifiable;
     protected $table = 'petugas';
     protected $primaryKey = 'id_petugas';
     public $timestamps = false;
@@ -21,6 +24,13 @@ class Petugas extends Model
         'url_foto_profil',
         'status'
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'password' => 'hashed',
+        ];
+    }
 
     public function peminjaman()
     {
