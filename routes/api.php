@@ -3,27 +3,33 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
+use App\Http\Middleware\MemberMiddleware;
+use App\Http\Middleware\PetugasMiddleware;
+
 use App\Http\Controllers\MemberController;
 use App\Http\Controllers\PetugasController;
 use App\Http\Controllers\AuthController;
 
-Route::post('/member/register', [MemberController::class, 'store']);
-   Route::post('/petugas/register', [PetugasController::class, 'store']);
+Route::post('/register/member', [MemberController::class, 'store']);
+   Route::post('/register/petugas', [PetugasController::class, 'store']);
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
 
-Route::middleware('auth:sanctum')->group(function () {
+//route member /api/member/...
+Route::middleware(['auth:sanctum', MemberMiddleware::class])->prefix('member')->group(function () {
     
-    Route::get('/member/profile', [MemberController::class, 'show']);
-    Route::post('/member/profile/update', [MemberController::class, 'update']);
-    Route::delete('/member/profile/delete', [MemberController::class, 'destroy']);
+    Route::get('/profile', [MemberController::class, 'show']);
+    Route::post('/profile/update', [MemberController::class, 'update']);
+    Route::delete('/profile/delete', [MemberController::class, 'destroy']);
 });
 
-Route::middleware('auth:sanctum')->group(function () {
+
+//route petugas /api/petugas/...
+Route::middleware(['auth:sanctum', PetugasMiddleware::class])->prefix('petugas')->group(function () {
  
-    Route::get('/petugas/profile', [PetugasController::class, 'show']);
-    Route::post('/petugas/profile/update', [PetugasController::class, 'update']);
-    Route::delete('/petugas/profile/delete', [PetugasController::class, 'destroy']);
+    Route::get('/profile', [PetugasController::class, 'show']);
+    Route::post('/profile/update', [PetugasController::class, 'update']);
+    Route::delete('/profile/delete', [PetugasController::class, 'destroy']);
 });
 
 // Route::get('/user', function (Request $request) {

@@ -4,9 +4,12 @@ namespace App\Http\Controllers;
 
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Http\Request;
 use App\Models\Member;
 use App\Models\Petugas;
+use Exception;
 
 
 class MemberController extends Controller
@@ -18,7 +21,7 @@ class MemberController extends Controller
                 [
                 'nama'       => 'required|string',
                 'username'   => 'required|string',
-                'email'      => 'required|email|',
+                'email'      => 'required|email',
                 'password'   => 'required|string|confirmed|min:8', 
                 'alamat'     => 'required|string|max:255',
                 'no_telp'    => 'required|string|max:30'
@@ -26,7 +29,6 @@ class MemberController extends Controller
                 [
                 'password.confirmed' => 'Konfirmasi password belum sesuai..', 
                 'email.email'      => 'Alamat email tidak valid..',
-                'tgl_daftar' => 'nullable|date',
                 'password.min'   => 'Password harus memiliki minimal 8 karakter..', 
                 'password.required'   => 'Password harus diisi..', 
                 'username.required'   => 'Username harus diisi..',
@@ -86,7 +88,7 @@ class MemberController extends Controller
 
     public function show()
     {
-        $member = Auth::user();
+        $member = Auth::guard('member')->user();
         if(!$member){
             return response()->json([
                 'status' => false,
@@ -106,7 +108,7 @@ class MemberController extends Controller
     {
         try{
             
-            $member = Auth::user();
+            $member = Auth::guard('member')->user();
             if(!$member){
                 return response()->json([
                     'status' => false,
@@ -117,18 +119,18 @@ class MemberController extends Controller
 
              $validator = Validator::make($request->all(),
                 [
-                    'nama'       => 'sometimes|required|string',
+                    'nama'       => 'sometimes|nullable|string',
                     'username' => [
-                        'sometimes', 'required', 'string', 'max:50',
+                        'sometimes', 'nullable', 'string', 'max:50',
                         Rule::unique('member','username')->ignore($member->id_member, 'id_member'),
                     ],
 
                     'email' => [
-                        'sometimes', 'required', 'email', 'max:100',
+                        'sometimes', 'nullable', 'email', 'max:100',
                         Rule::unique('member','email')->ignore($member->id_member, 'id_member'),
                     ],
-                    'alamat'     => 'sometimes|required|string|max:255',
-                    'no_telp'    => 'sometimes|required|string|max:30'
+                    'alamat'     => 'sometimes|nullable|string|max:255',
+                    'no_telp'    => 'sometimes|nullable|string|max:30'
                 ]
             );
 
@@ -153,6 +155,8 @@ class MemberController extends Controller
                 ], 422);
             }
 
+            $data = $validator->validated();
+
             if($request->hasFile('url_foto_profil')){
                 $image = $request->url_foto_profil;
                 $imageName = $image->getClientOriginalName();
@@ -167,12 +171,7 @@ class MemberController extends Controller
                 ]);
             }
 
-            $member->update([
-                'nama' => $request->nama,
-                'email' => $request->email,
-                'no_telp' => $request->no_telp,
-                'alamat' => $request->alamat,
-            ]);
+            $member->update($data);
 
             return response()->json([
                 'status'  => true,
@@ -192,7 +191,8 @@ class MemberController extends Controller
     public function destroy()
     {
         try {
-            $member = Auth::user();
+            $member = Auth::guard('member')->user();
+
 
             if (!$member) {
                 return response()->json([

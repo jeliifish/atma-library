@@ -46,6 +46,16 @@ return [
             'provider' => 'users',
             'hash' => false,
         ],
+
+        'petugas' => [
+            'driver' => 'sanctum',
+            'provider' => 'petugas',
+        ],
+
+        'member' => [
+            'driver' => 'sanctum',
+            'provider' => 'member',
+        ],
     ],
 
     /*
@@ -69,6 +79,16 @@ return [
         'users' => [
             'driver' => 'eloquent',
             'model' => env('AUTH_MODEL', App\Models\User::class),
+        ],
+
+        'petugas' => [
+            'driver' => 'eloquent',
+            'model' => App\Models\Petugas::class,
+        ],
+
+        'member' => [
+            'driver' => 'eloquent',
+            'model' => App\Models\Member::class,
         ],
 
         // 'users' => [
