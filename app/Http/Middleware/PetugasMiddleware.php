@@ -11,7 +11,7 @@ class PetugasMiddleware
 {
     public function handle(Request $request, Closure $next): Response
     {
-         if(Auth::guard('petugas')->check()){
+        if(Auth::guard('petugas')->check()){
             return $next($request);
         }
         return response()->json(['message' => 'Unauthorized. Petugas only access.'], 403);
