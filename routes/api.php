@@ -10,6 +10,7 @@ use App\Http\Controllers\MemberController;
 use App\Http\Controllers\PetugasController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BukuController;
+use App\Http\Controllers\KategoriController;
 use App\Http\Controllers\CopyBukuController;
 
 Route::post('/register/member', [MemberController::class, 'store']);
@@ -49,7 +50,12 @@ Route::middleware(['auth:sanctum', PetugasMiddleware::class])->prefix('petugas')
     Route::delete('/copyBuku/{id_buku_copy}', [CopyBukuController::class, 'destroy']);
 });
 
-
+// route kategori
+Route::get('/kategori', [KategoriController::class, 'index']);
+Route::post('/kategori', [KategoriController::class, 'store']);
+Route::get('/kategori/{id_kategori}', [KategoriController::class, 'show']);
+Route::put('/kategori/{id_kategori}', [KategoriController::class, 'update']);
+Route::delete('/kategori/{id_kategori}', [KategoriController::class, 'destroy']);
 
 // Route::get('/user', function (Request $request) {
 //     return $request->user();
