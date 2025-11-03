@@ -10,9 +10,7 @@ use Illuminate\Database\QueryException;
 
 class KategoriController extends Controller
 {
-    /**
-     * Tampilkan semua kategori
-     */
+    
     public function index()
     {
         try {
@@ -33,9 +31,7 @@ class KategoriController extends Controller
         }
     }
 
-    /**
-     * Tambahkan kategori baru
-     */
+    
     public function store(Request $request)
     {
         try {
@@ -79,11 +75,6 @@ class KategoriController extends Controller
         }
     }
 
-
-
-    /**
-     * Tampilkan satu kategori berdasarkan ID
-     */
     public function show($id_kategori)
     {
         try {
@@ -112,9 +103,7 @@ class KategoriController extends Controller
         }
     }
 
-    /**
-     * Update data kategori
-     */
+    
     public function update(Request $request, $id_kategori)
     {
         try {
@@ -158,9 +147,7 @@ class KategoriController extends Controller
         }
     }
 
-    /**
-     * Hapus kategori
-     */
+    
     public function destroy($id_kategori)
     {
         try {
