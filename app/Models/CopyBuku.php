@@ -3,7 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-
+use Illuminate\Support\Facades\DB;
 class CopyBuku extends Model
 {
     protected $table = 'copy_buku';
@@ -17,6 +17,45 @@ class CopyBuku extends Model
         'rak',
         'status'
     ];
+
+      // === AUTO-ID: BKU0001-001, BKU0001-002, ... ===
+    protected static function booted()
+    {
+        static::creating(function (CopyBuku $model) {
+            if (empty($model->id_buku)) {
+                throw new \InvalidArgumentException('id_buku wajib diisi untuk membuat id_buku_copy.');
+            }
+
+            if (empty($model->id_buku_copy)) {
+                $model->id_buku_copy = static::nextCopyId($model->id_buku);
+            }
+        });
+    }
+
+    public static function nextCopyId(string $id_buku): string
+    {
+        // Versi aman-konkuren (pakai transaksi + lock)
+        return DB::transaction(function () use ($id_buku) {
+            // Kunci baris-baris terkait buku ini agar nomor tidak dobel saat insert bersamaan
+            DB::table('copy_buku')
+                ->where('id_buku', $id_buku)
+                ->lockForUpdate()
+                ->get();
+
+            // Ambil suffix terbesar setelah tanda '-'
+            $latest = static::where('id_buku', $id_buku)
+                ->where('id_buku_copy', 'like', $id_buku . '-%')
+                ->orderByRaw("CAST(SUBSTRING_INDEX(id_buku_copy, '-', -1) AS UNSIGNED) DESC")
+                ->value('id_buku_copy');
+
+            $nextNumber = $latest
+                ? (int) substr($latest, strlen($id_buku) + 1) + 1
+                : 1;
+
+            return sprintf('%s-%03d', $id_buku, $nextNumber);
+        });
+    }
+
 
     public function detailPeminjaman()
     {
