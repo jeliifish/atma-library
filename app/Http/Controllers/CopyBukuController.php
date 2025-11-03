@@ -22,7 +22,6 @@ class CopyBukuController extends Controller
         ], 200);
     }
 
-    //store new buku copy
     public function store(Request $request)
     {
         $validated = $request->validate([
@@ -97,6 +96,7 @@ class CopyBukuController extends Controller
             ]);
 
             $copyBuku->update($validated);
+            
 
             return response()->json([
                 'status' => true,
