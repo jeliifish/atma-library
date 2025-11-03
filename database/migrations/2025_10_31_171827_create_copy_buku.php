@@ -12,10 +12,10 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('copy_buku', function (Blueprint $table) {
-            $table->string('id_buku_copy',10)->primary();
+            $table->string('id_buku_copy',20)->primary();
             $table->string('id_buku');
             $table->string('rak');
-            $table->enum('status', ['dipinjam', 'dikembalikan']);
+            $table->enum('status', ['dipinjam', 'tersedia']);
             $table->timestamps();
 
             $table->foreign('id_buku')
