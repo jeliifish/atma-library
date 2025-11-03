@@ -120,4 +120,35 @@ class CopyBukuController extends Controller
             ], 500);
         }
     }
+
+    public function destroy($id_buku_copy)
+    {
+        try {
+            
+            $copyBuku = CopyBuku::find($id_buku_copy);
+
+            if (!$copyBuku) {
+                return response()->json([
+                    'status' => false,
+                    'message' => "Copy Buku dengan ID $id_buku_copy tidak ditemukan.",
+                    'data' => []
+                ], 404);
+            }
+
+            //hapus
+            $copyBuku->delete();
+
+            return response()->json([
+                'status' => true,
+                 'message' => "Copy Buku dengan ID $id_buku_copy berhasil dihapus.",
+            ], 200);
+
+        } catch (\Exception $e) {
+            
+            return response()->json([
+                'status' => false,
+                'message' => 'Terjadi kesalahan saat menghapus copy buku: ' . $e->getMessage()
+            ], 500);
+        }
+    }
 }
