@@ -32,7 +32,7 @@ class CopyBuku extends Model
         });
     }
 
-    public static function nextCopyId(string $idBuku): string
+    public static function nextCopyId(string $id_buku): string
     {
         // Versi aman-konkuren (pakai transaksi + lock)
         return DB::transaction(function () use ($id_buku) {

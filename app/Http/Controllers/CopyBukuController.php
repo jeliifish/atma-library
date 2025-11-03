@@ -10,6 +10,18 @@ use Illuminate\Validation\ValidationException;
 
 class CopyBukuController extends Controller
 {
+
+    public function index()
+    {
+        $copyBuku = CopyBuku::all();
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Daftar semua copy buku',
+            'data' => $copyBuku
+        ], 200);
+    }
+
     //store new buku copy
     public function store(Request $request)
     {
@@ -27,9 +39,7 @@ class CopyBukuController extends Controller
             ], 404);    
         }
 
-    ;
-
-        $validated['status'] = 'dikembalikan';
+        $validated['status'] = 'tersedia';
         
         $copyBuku = CopyBuku::create($validated);
          

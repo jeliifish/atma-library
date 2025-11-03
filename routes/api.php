@@ -22,7 +22,8 @@ Route::get('/buku', [BukuController::class, 'index']);
 Route::get('/buku/{id_buku}', [BukuController::class, 'show']);
 
 // route public /api/copyBuku/...
-Route::get('/copyBuku/{copy_buku}', [CopyBukuController::class, 'show']);
+Route::get('/copyBuku', [CopyBukuController::class, 'index']);
+Route::get('/copyBuku/{id_buku_copy}', [CopyBukuController::class, 'show']);
 
 //route member /api/member/...
 Route::middleware(['auth:sanctum', MemberMiddleware::class])->prefix('member')->group(function () {
@@ -44,6 +45,7 @@ Route::middleware(['auth:sanctum', PetugasMiddleware::class])->prefix('petugas')
     Route::delete('/buku/{id_buku}', [BukuController::class, 'destroy']);
 
     Route::post('/copyBuku', [CopyBukuController::class, 'store']);
+    Route::put('/buku/{id_buku_copy}', [CopyBukuController::class, 'update']);
 });
 
 
