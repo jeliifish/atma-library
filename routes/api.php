@@ -11,6 +11,7 @@ use App\Http\Controllers\PetugasController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BukuController;
 use App\Http\Controllers\KategoriController;
+use App\Http\Controllers\CopyBukuController;
 
 Route::post('/register/member', [MemberController::class, 'store']);
 Route::post('/register/petugas', [PetugasController::class, 'store']);
@@ -20,6 +21,10 @@ Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth:sanc
 // route public /api/buku/...
 Route::get('/buku', [BukuController::class, 'index']);
 Route::get('/buku/{id_buku}', [BukuController::class, 'show']);
+
+// route public /api/copyBuku/...
+Route::get('/copyBuku', [CopyBukuController::class, 'index']);
+Route::get('/copyBuku/{id_buku_copy}', [CopyBukuController::class, 'show']);
 
 //route member /api/member/...
 Route::middleware(['auth:sanctum', MemberMiddleware::class])->prefix('member')->group(function () {
@@ -39,6 +44,10 @@ Route::middleware(['auth:sanctum', PetugasMiddleware::class])->prefix('petugas')
     Route::post('/buku', [BukuController::class, 'store']);
     Route::put('/buku/{id_buku}', [BukuController::class, 'update']);
     Route::delete('/buku/{id_buku}', [BukuController::class, 'destroy']);
+
+    Route::post('/copyBuku', [CopyBukuController::class, 'store']);
+    Route::put('/copyBuku/{id_buku_copy}', [CopyBukuController::class, 'update']);
+    Route::delete('/copyBuku/{id_buku_copy}', [CopyBukuController::class, 'destroy']);
 });
 
 // route kategori
