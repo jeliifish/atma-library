@@ -51,4 +51,105 @@ class AuthController extends Controller
         $request->user()->currentAccessToken()->delete();
         return response()->json(['message' => 'Logout berhasil']);
     }
+
+    public function addToDraft(Request $request)
+    {
+        try{
+            $validated = $request->validate([
+                'id_buku' => 'required|exists:buku,id_buku',
+            ]);
+
+            $member = Auth::guard('member')->user();
+
+            return DB::transaction(function () use ($validated, $memberId) {
+                // ambil peminjaman dari member sekarang dengan status 'menunggu'
+                $draft = Peminjaman::where('id_member', $member->id_member)
+                    ->where('status', 'menunggu')
+                    ->latest('tgl_pinjam')
+                    ->first();
+
+
+
+                // cari copyan buku terakhir yang tersedia
+                $copy = CopyBuku::where('id_buku', $validated['id_buku'])
+                    ->where('status', 'tersedia')
+                    ->orderBy('id_buku_copy', 'desc')
+                    ->lockForUpdate()
+                    ->first();
+
+                if (!$copy) {
+                    return response()->json([
+                        'status' => false,
+                        'message' => 'Tidak ada copy buku yang tersedia.',
+                    ], 409);
+                }
+
+                // tambah ke detail draft
+                $detail = DetailPeminjaman::create([
+                    'nomor_pinjam' => $draft->nomor_pinjam,
+                    'id_buku'      => $validated['id_buku'],
+                    'id_buku_copy' => $copy->id_buku_copy,
+                    'tgl_kembali'  => null,
+                ]);
+
+                // tandain copy buku yang lagi diajuin
+                $copy->update(['status' => 'dipinjam']);
+
+                return response()->json([
+                    'status' => true,
+                    'message' => 'Buku berhasil ditambahkan ke daftar peminjaman sementara.',
+                    'data' => compact('draft', 'detail')
+                ]);
+            });
+        }catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Terjadi kesalahan saat menambahkan buku ke draft: ' . $e->getMessage(),
+            ], 500);
+        }
+        
+    }
+
+    public function submitDraft(Request $request)
+    {
+        try{
+            $member = Auth::guard('member')->user();
+
+            //ambl draft peminjaman terakhir dengan status menunggu dan punya detail peminjaman
+            $draft = Peminjaman::where('id_member', $member->id_member)
+                ->whereIn('status', 'menunggu')
+                ->whereHas('detailPeminjaman')
+                ->latest('nomor_pinjam')
+                ->firstOrFail();
+
+            if (!$draft) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Tidak ada peminjaman draft yang bisa diajukan.'
+                ], 404);
+            }
+
+            if($draft->detailPeminjaman->isEmpty()){
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Tidak ada buku dalam draft peminjaman.'
+                ], 400);
+            }
+            
+            $draft->update(['status' => 'menunggu']);
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Peminjaman berhasil diajukan, menunggu persetujuan petugas.',
+                'data' => $draft
+            ]);
+        }catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Terjadi kesalahan saat mengajukan peminjaman: ' . $e->getMessage(),
+            ], 500);
+        }
+       
+    }   
+
 }
