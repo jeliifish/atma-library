@@ -17,6 +17,7 @@ return new class extends Migration
             $table->unsignedBigInteger('id_petugas');
             $table->date('tgl_pinjam');
             $table->date('tgl_kembali');
+             $table->enum('status', ['draft', 'menunggu', 'disetujui','ditolak, dikembalikan']);
             $table->timestamps();
 
             $table->foreign('id_member')
