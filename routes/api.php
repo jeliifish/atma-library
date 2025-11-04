@@ -12,6 +12,8 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BukuController;
 use App\Http\Controllers\KategoriController;
 use App\Http\Controllers\CopyBukuController;
+use App\Http\Controllers\PeminjamanController;
+use App\Http\Controllers\DetailPeminjamanController;
 
 Route::post('/register/member', [MemberController::class, 'store']);
 Route::post('/register/petugas', [PetugasController::class, 'store']);
@@ -32,6 +34,10 @@ Route::middleware(['auth:sanctum', MemberMiddleware::class])->prefix('member')->
     Route::get('/profile', [MemberController::class, 'show']);
     Route::post('/profile/update', [MemberController::class, 'update']);
     Route::delete('/profile/delete', [MemberController::class, 'destroy']);
+
+    Route::post('/peminjaman', [PeminjamanController::class, 'store']);
+    Route::post('/detailPeminjaman', [AuthController::class, 'addToDraft']);
+    Route::post('/detailPeminjaman', [AuthController::class, 'submitDraft']);
 });
 
 //route petugas /api/petugas/...
@@ -48,6 +54,12 @@ Route::middleware(['auth:sanctum', PetugasMiddleware::class])->prefix('petugas')
     Route::post('/copyBuku', [CopyBukuController::class, 'store']);
     Route::put('/copyBuku/{id_buku_copy}', [CopyBukuController::class, 'update']);
     Route::delete('/copyBuku/{id_buku_copy}', [CopyBukuController::class, 'destroy']);
+
+    route::get('/peminjaman', [PeminjamanController::class, 'index']);
+    route::get('/peminjaman/{nomor_pinjam}', [PeminjamanController::class, 'show']);
+    Route::put('/peminjaman/{nomor_pinjam}/status', [PeminjamanController::class, 'updateStatus']);
+    
+
 });
 
 // route kategori
