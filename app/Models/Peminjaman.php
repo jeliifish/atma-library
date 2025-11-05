@@ -14,7 +14,8 @@ class Peminjaman extends Model
         'id_member',
         'id_petugas',
         'tgl_pinjam',
-        'tgl_kembali'
+        'tgl_kembali',
+        'status'
     ];
 
     public function member()

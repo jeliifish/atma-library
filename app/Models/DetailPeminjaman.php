@@ -14,8 +14,7 @@ class DetailPeminjaman extends Model
     protected $fillable = [
         'nomor_pinjam',
         'id_buku_copy',
-        'tgl_kembali',
-        'status'
+        'tgl_kembali'
     ];
 
     public function peminjaman()

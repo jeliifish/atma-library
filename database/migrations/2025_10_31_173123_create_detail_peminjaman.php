@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('detail_peminjaman', function (Blueprint $table) {
             $table->unsignedBigInteger('nomor_pinjam');
             $table->string('id_buku_copy');
-            $table->date('tgl_kembali');
+            $table->date('tgl_kembali')->nullable();
             $table->timestamps();
 
             $table->foreign('nomor_pinjam')

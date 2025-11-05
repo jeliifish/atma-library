@@ -37,7 +37,7 @@ Route::middleware(['auth:sanctum', MemberMiddleware::class])->prefix('member')->
 
     Route::post('/peminjaman', [PeminjamanController::class, 'store']);
     Route::post('/detailPeminjaman', [AuthController::class, 'addToDraft']);
-    Route::post('/detailPeminjaman', [AuthController::class, 'submitDraft']);
+    Route::post('/detailPeminjaman/submit', [AuthController::class, 'submitDraft']);
 });
 
 //route petugas /api/petugas/...
@@ -57,7 +57,7 @@ Route::middleware(['auth:sanctum', PetugasMiddleware::class])->prefix('petugas')
 
     route::get('/peminjaman', [PeminjamanController::class, 'index']);
     route::get('/peminjaman/{nomor_pinjam}', [PeminjamanController::class, 'show']);
-    Route::put('/peminjaman/{nomor_pinjam}/status', [PeminjamanController::class, 'updateStatus']);
+    Route::put('/peminjaman/{nomor_pinjam}/update', [PeminjamanController::class, 'updateStatus']);
     
 
 });

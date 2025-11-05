@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('peminjaman', function (Blueprint $table) {
             $table->id('nomor_pinjam');
             $table->unsignedBigInteger('id_member');
-            $table->unsignedBigInteger('id_petugas');
+            $table->unsignedBigInteger('id_petugas')->nullable();
             $table->date('tgl_pinjam');
             $table->date('tgl_kembali');
              $table->enum('status', ['draft', 'menunggu', 'disetujui','ditolak, dikembalikan']);

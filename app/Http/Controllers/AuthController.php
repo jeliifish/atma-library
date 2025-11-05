@@ -4,8 +4,13 @@ namespace App\Http\Controllers;
 
 use App\Models\Member;
 use App\Models\Petugas;
+use App\Models\Peminjaman;
+use App\Models\CopyBuku;
+use App\Models\DetailPeminjaman;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class AuthController extends Controller
 {
@@ -61,16 +66,17 @@ class AuthController extends Controller
 
             $member = Auth::guard('member')->user();
 
-            return DB::transaction(function () use ($validated, $memberId) {
+            return DB::transaction(function () use ($validated, $member) {
                 // ambil peminjaman dari member sekarang dengan status 'menunggu'
                 $draft = Peminjaman::where('id_member', $member->id_member)
-                    ->where('status', 'menunggu')
+                    ->where('status', 'draft')
                     ->latest('tgl_pinjam')
                     ->first();
 
 
 
                 // cari copyan buku terakhir yang tersedia
+              
                 $copy = CopyBuku::where('id_buku', $validated['id_buku'])
                     ->where('status', 'tersedia')
                     ->orderBy('id_buku_copy', 'desc')
@@ -117,10 +123,10 @@ class AuthController extends Controller
 
             //ambl draft peminjaman terakhir dengan status menunggu dan punya detail peminjaman
             $draft = Peminjaman::where('id_member', $member->id_member)
-                ->whereIn('status', 'menunggu')
+                ->where('status', 'draft')
                 ->whereHas('detailPeminjaman')
                 ->latest('nomor_pinjam')
-                ->firstOrFail();
+                ->first();
 
             if (!$draft) {
                 return response()->json([
@@ -137,7 +143,10 @@ class AuthController extends Controller
             }
             
             $draft->update(['status' => 'menunggu']);
-
+            $draft->save();
+            $draft = $draft->fresh(['detailPeminjaman.copyBuku','member','petugas']);
+            
+         
             return response()->json([
                 'status' => true,
                 'message' => 'Peminjaman berhasil diajukan, menunggu persetujuan petugas.',

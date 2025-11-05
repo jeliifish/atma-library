@@ -7,6 +7,7 @@ use App\Models\Peminjaman;
 use App\Models\DetailPeminjaman;
 use Illuminate\Support\Facades\DB;
 use App\Models\CopyBuku;
+use Illuminate\Support\Facades\Auth;
 
 class PeminjamanController extends Controller
 {
@@ -117,7 +118,7 @@ class PeminjamanController extends Controller
                 ], 404);
             }
 
-            DB::transaction(function () use ($request, $peminjaman) {
+            DB::transaction(function () use ($request, $peminjaman, $petugas) {
                 $newStatus = $request->status;
 
                 // update header
