@@ -18,6 +18,7 @@ class Peminjaman extends Model
         'status'
     ];
 
+
     public function member()
     {
         return $this->belongsTo(Member::class, 'id_member', 'id_member');
@@ -41,6 +42,6 @@ class Peminjaman extends Model
     public function copyBuku()
     {
         return $this->belongsToMany(CopyBuku::class, 'detail_peminjaman', 'nomor_pinjam', 'id_buku_copy')
-            ->withPivot(['id_member', 'tgl_kembali', 'status', 'created_at', 'updated_at']);
+            ->withPivot(['tgl_kembali', 'status']);
     }
 }
