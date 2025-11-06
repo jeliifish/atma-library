@@ -61,6 +61,46 @@ class PeminjamanController extends Controller
         ]);
     }
 
+    public function showLatest()
+    {
+        try{
+            $member = Auth::guard('member')->user();
+            $peminjaman = Peminjaman::with([
+                'member',
+                'petugas',
+                'detailPeminjaman.copyBuku'
+            ])
+            ->where('id_member', $member->id_member)
+            ->latest('nomor_pinjam') // bisa diganti latest('tgl_pinjam') kalau mau based on tanggal
+            ->first();
+
+            // $peminjaman = Peminjaman::where('id_member', $member->id_member)
+            //                 ->where('nomor_pinjam', $nomor_pinjam)
+            //                 ->with('detailPeminjaman.copyBuku')
+            //                 ->first();
+
+            if (!$peminjaman) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Peminjaman tidak ditemukan.',
+                    'data' => null
+                ], 404);
+            }
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Detail peminjaman berhasil diambil.',
+                'data' => $peminjaman
+            ]);
+        }catch (\Exception $e) {
+            return response()->json([
+                    'status' => false,
+                    'message' => 'Terjadi kesalahan: ' . $e->getMessage()
+                ], 500);
+        }
+        
+    }
+
     public function store()
     {
         try{
