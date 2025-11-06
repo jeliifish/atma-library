@@ -18,6 +18,12 @@ class CopyBuku extends Model
         'status'
     ];
 
+     // ✨ Default value kalau belum ada status diisi
+    protected $attributes = [
+        'status' => 'tersedia',
+    ];
+
+
       // === AUTO-ID: BKU0001-001, BKU0001-002, ... ===
     protected static function booted()
     {

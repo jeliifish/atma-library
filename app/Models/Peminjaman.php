@@ -8,9 +8,12 @@ class Peminjaman extends Model
 {
     protected $table = 'peminjaman';
     protected $primaryKey = 'nomor_pinjam';
+    public $incrementing = true; // karena bukan auto-increment
+    protected $keyType = 'int'; // karena ID-nya berupa teks (PMJ0001)
     public $timestamps = false;
 
     protected $fillable = [
+        'nomor_pinjam', // tambahkan ini supaya bisa mass-assignment
         'id_member',
         'id_petugas',
         'tgl_pinjam',
@@ -22,7 +25,7 @@ class Peminjaman extends Model
         return $this->belongsTo(Member::class, 'id_member', 'id_member');
     }
 
-     public function denda()
+    public function denda()
     {
         return $this->hasOne(Denda::class, 'nomor_pinjam', 'nomor_pinjam');
     }
@@ -40,6 +43,6 @@ class Peminjaman extends Model
     public function copyBuku()
     {
         return $this->belongsToMany(CopyBuku::class, 'detail_peminjaman', 'nomor_pinjam', 'id_buku_copy')
-            ->withPivot(['id_member', 'tgl_kembali', 'status', 'created_at', 'updated_at']);
+            ->withPivot(['tgl_kembali', 'status']);
     }
 }

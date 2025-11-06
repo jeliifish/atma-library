@@ -12,6 +12,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BukuController;
 use App\Http\Controllers\KategoriController;
 use App\Http\Controllers\CopyBukuController;
+use App\Http\Controllers\PeminjamanController;
 
 Route::post('/register/member', [MemberController::class, 'store']);
 Route::post('/register/petugas', [PetugasController::class, 'store']);
@@ -56,6 +57,21 @@ Route::post('/kategori', [KategoriController::class, 'store']);
 Route::get('/kategori/{id_kategori}', [KategoriController::class, 'show']);
 Route::put('/kategori/{id_kategori}', [KategoriController::class, 'update']);
 Route::delete('/kategori/{id_kategori}', [KategoriController::class, 'destroy']);
+
+// Menampilkan semua peminjaman
+Route::get('/peminjaman', [PeminjamanController::class, 'index']);
+
+// Mengajukan peminjaman (member melakukan request pinjam)
+Route::post('/peminjaman', [PeminjamanController::class, 'store']);
+
+// Petugas menyetujui peminjaman
+Route::put('/peminjaman/{nomor_pinjam}/approve', [PeminjamanController::class, 'approve']);
+
+// Petugas menolak peminjaman
+Route::put('/peminjaman/{nomor_pinjam}/reject', [PeminjamanController::class, 'reject']);
+
+// Mengembalikan buku
+Route::put('/peminjaman/{nomor_pinjam}/kembalikan', [PeminjamanController::class, 'pengembalian']);
 
 // Route::get('/user', function (Request $request) {
 //     return $request->user();
