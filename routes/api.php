@@ -20,13 +20,16 @@ Route::post('/register/petugas', [PetugasController::class, 'store']);
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
 
-// route public /api/buku/...
+// route public /api. .
 Route::get('/buku', [BukuController::class, 'index']);
 Route::get('/buku/{id_buku}', [BukuController::class, 'show']);
 
-// route public /api/copyBuku/...
+// route public /api. .
 Route::get('/copyBuku', [CopyBukuController::class, 'index']);
 Route::get('/copyBuku/{id_buku_copy}', [CopyBukuController::class, 'show']);
+
+// route public /api. .
+route::get('/peminjaman/showLatest', [PeminjamanController::class, 'showLatest']);
 
 //route member /api/member/...
 Route::middleware(['auth:sanctum', MemberMiddleware::class])->prefix('member')->group(function () {
@@ -38,6 +41,8 @@ Route::middleware(['auth:sanctum', MemberMiddleware::class])->prefix('member')->
     Route::post('/peminjaman', [PeminjamanController::class, 'store']);
     Route::post('/detailPeminjaman', [AuthController::class, 'addToDraft']);
     Route::post('/detailPeminjaman/submit', [AuthController::class, 'submitDraft']);
+
+    Route::put('/peminjaman/kembali', [AuthController::class, 'returnBook']);
 });
 
 //route petugas /api/petugas/...
