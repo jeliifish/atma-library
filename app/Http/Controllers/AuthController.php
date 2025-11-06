@@ -161,4 +161,72 @@ class AuthController extends Controller
        
     }   
 
+    public function returnBook()
+    {
+        try{
+            $member = Auth::guard('member')->user();
+            if (!$member) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Member tidak ditemukan.'
+                ], 404);
+            }
+
+        $peminjaman = Peminjaman::where('id_member', $member->id_member)
+                    ->where('status', 'disetujui')
+                    ->whereHas('detailPeminjaman')
+                    ->latest('nomor_pinjam')
+                    ->first();
+
+            if (!$peminjaman) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Tidak ada peminjaman yang sedang dipinjam.'
+                ], 404);
+            }
+
+            foreach ($peminjaman->detailPeminjaman as $detail) {
+                $detail->tgl_kembali = now();
+                $detail->save();
+
+                // update status copy buku menjadi tersedia
+                $copyBuku = CopyBuku::find($detail->id_buku_copy);
+                if ($copyBuku) {
+                    $copyBuku->status = 'tersedia';
+                    $copyBuku->save();
+                }
+            }
+
+            // // menghitung denda jika ada keterlambatan
+            // foreach ($peminjaman->detailPeminjaman as $detail) {
+            //     $dueDate = $peminjaman->tgl_kembali;
+            //     $returnDate = $detail->tgl_kembali;
+
+            //     if ($returnDate->gt($dueDate)) {
+            //         $daysLate = $dueDate->diffInDays($returnDate);
+            //         $dendaPerDay = 2000; // contoh denda per hari
+            //         $totalDenda = $daysLate * $dendaPerDay;
+
+            //         // Simpan atau proses denda sesuai kebutuhan
+            //     }
+            // }
+            
+            $peminjaman->status = 'dikembalikan';
+            $peminjaman->save();
+            return response()->json([
+                'status' => true,
+                'message' => 'Buku berhasil dikembalikan.',
+                'data' => $peminjaman
+            ]);
+
+        }catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Terjadi kesalahan saat mengembalikan buku: ' . $e->getMessage(),
+            ], 500);
+        }
+        
+    }
+    
+
 }
