@@ -15,6 +15,7 @@ return new class extends Migration
             $table->unsignedBigInteger('nomor_pinjam');
             $table->string('id_buku_copy');
             $table->date('tgl_kembali')->nullable();
+            $table->enum('status', ['dipinjam', 'dikembalikan', 'terlambat']);
             $table->timestamps();
 
             $table->foreign('nomor_pinjam')
