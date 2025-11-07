@@ -67,6 +67,17 @@ class MemberController extends Controller
             $data['url_foto_profil'] = 'images/default-profile.jpeg'; // path relatif dari public/
 
             $member = Member::create($data);
+
+            $member->peminjaman()->firstOrCreate(
+                [
+                    'id_member' => $member->id_member,
+                    'id_petugas' => null,
+                    'tgl_pinjam' => now(),
+                    'tgl_kembali' => now()->addDays(7),
+                    'status' => 'draft'
+                ]
+            );
+
             
             $token = $member->createToken('api')->plainTextToken;
 
@@ -171,7 +182,11 @@ class MemberController extends Controller
                 ]);
             }
 
+
+
             $member->update($data);
+
+
 
             return response()->json([
                 'status'  => true,
