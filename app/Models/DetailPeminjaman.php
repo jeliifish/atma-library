@@ -15,7 +15,7 @@ class DetailPeminjaman extends Model
         'nomor_pinjam',
         'id_buku_copy',
         'tgl_kembali',
-        'status'
+        'status',
     ];
 
     public function peminjaman()
