@@ -172,10 +172,26 @@ class AuthController extends Controller
                 ], 404);
             }
 
-        $peminjaman = Peminjaman::where('id_member', $member->id_member)
-                    ->where('status', 'disetujui')
-                    ->whereHas('detailPeminjaman')
-                    ->latest('nomor_pinjam')
+             $validated = $request->validate([
+                'id_buku_copy' => 'required|exists:buku_copy,id_buku_copy',
+            ]);
+
+            $peminjaman = Peminjaman::where('id_member', $member->id_member)    //
+            ->where('status', 'disetujui')
+            ->whereHas('detailPeminjaman', function ($query) use ($validated) {
+                $query->where('id_buku_copy', $validated['id_buku_copy']);
+            })
+            ->with('detailPeminjaman')
+            ->first();
+
+            // $peminjaman = Peminjaman::where('id_member', $member->id_member) //nanti kalo udh dikembaliin smw, status peminjaman 
+            //         ->where('status', 'disetujui')                           //jadi "selesai" 
+            //         ->whereHas('detailPeminjaman')
+            //         ->latest('nomor_pinjam')
+            //         ->first();
+
+            $detailSelected = $peminjaman->detailPeminjaman
+                    ->where('id_buku_copy', $validated['id_buku_copy'])
                     ->first();
 
             if (!$peminjaman) {
@@ -185,18 +201,7 @@ class AuthController extends Controller
                 ], 404);
             }
 
-            foreach ($peminjaman->detailPeminjaman as $detail) {
-                $detail->tgl_kembali = now();
-                $detail->save();
-
-                // update status copy buku menjadi tersedia
-                $copyBuku = CopyBuku::find($detail->id_buku_copy);
-                if ($copyBuku) {
-                    $copyBuku->status = 'tersedia';
-                    $copyBuku->save();
-                }
-            }
-
+       
             // // menghitung denda jika ada keterlambatan
             // foreach ($peminjaman->detailPeminjaman as $detail) {
             //     $dueDate = $peminjaman->tgl_kembali;
@@ -211,8 +216,9 @@ class AuthController extends Controller
             //     }
             // }
             
-            $peminjaman->status = 'dikembalikan';
-            $peminjaman->save();
+            $detailSelected->status = 'dikembalikan';   //cm yg dipilih yg statusnya berubah
+            $detailSelected->save();
+
             return response()->json([
                 'status' => true,
                 'message' => 'Buku berhasil dikembalikan.',
