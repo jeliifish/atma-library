@@ -2,11 +2,12 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
+use Exception;
+use App\Models\CopyBuku;
 use App\Models\Peminjaman;
+use Illuminate\Http\Request;
 use App\Models\DetailPeminjaman;
 use Illuminate\Support\Facades\DB;
-use App\Models\CopyBuku;
 use Illuminate\Support\Facades\Auth;
 
 class PeminjamanController extends Controller
@@ -137,7 +138,7 @@ class PeminjamanController extends Controller
     {
         try{
             $request->validate([
-                'status' => 'required|in:disetujui,ditolak,dikembalikan',
+                'status' => 'required|in:disetujui,ditolak',
             ]);
 
             // pastikan yang login petugas
@@ -170,7 +171,7 @@ class PeminjamanController extends Controller
                 // kalau disetujui → set semua detail jadi disetujui dan ubah status copy-nya
                 if ($newStatus === 'disetujui') {
                     foreach ($peminjaman->detailPeminjaman as $detail) {
-                        $detail->update(['status' => 'disetujui']);
+                        $detail->update(['status' => 'dipinjam']);
 
                         // ubah stok copy
                         $copy = CopyBuku::find($detail->id_buku_copy);
@@ -183,7 +184,7 @@ class PeminjamanController extends Controller
                 // kalau ditolak → set semua detail jadi ditolak & copy buku dikembalikan tersedia
                 if ($newStatus === 'ditolak') {
                     foreach ($peminjaman->detailPeminjaman as $detail) {
-                        $detail->update(['status' => 'ditolak']);
+                        $detail->update(['status' => 'dikembalikan']);
                         $copy = CopyBuku::find($detail->id_buku_copy);
                         if ($copy) {
                             $copy->update(['status' => 'tersedia']);
@@ -191,16 +192,6 @@ class PeminjamanController extends Controller
                     }
                 }
 
-                // kalau selesai → semua detail sudah dikembalikan
-                if ($newStatus === 'dikembalikan') {
-                    foreach ($peminjaman->detailPeminjaman as $detail) {
-                        $detail->update(['tgl_kembali' => now(), 'status' => 'dikembalikan']);
-                        $copy = CopyBuku::find($detail->id_buku_copy);
-                        if ($copy) {
-                            $copy->update(['status' => 'tersedia']);
-                        }
-                    }
-                }
             });
 
             return response()->json([
