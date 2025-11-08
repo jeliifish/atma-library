@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Member;
+
 use App\Models\Petugas;
 use App\Models\Peminjaman;
 use App\Models\CopyBuku;
@@ -11,6 +11,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use App\Models\Member;
+
 
 class AuthController extends Controller
 {
@@ -66,8 +68,9 @@ class AuthController extends Controller
 
             $member = Auth::guard('member')->user();
 
+
             return DB::transaction(function () use ($validated, $member) {
-                // ambil peminjaman dari member sekarang dengan status 'menunggu'
+                // ambil peminjaman dari member sekarang dengan status 'draft'
                 $draft = Peminjaman::where('id_member', $member->id_member)
                     ->where('status', 'draft')
                     ->latest('tgl_pinjam')
@@ -96,6 +99,7 @@ class AuthController extends Controller
                     'id_buku'      => $validated['id_buku'],
                     'id_buku_copy' => $copy->id_buku_copy,
                     'tgl_kembali'  => null,
+                    'status'       => 'menunggu',
                 ]);
 
                 // tandain copy buku yang lagi diajuin
@@ -143,10 +147,22 @@ class AuthController extends Controller
             }
             
             $draft->update(['status' => 'menunggu']);
-            $draft->save();
+           
+            $member->peminjaman()->create(
+                [
+                    ['status' => 'draft'],
+                    [
+                        'id_petugas' => null,
+                        'tgl_pinjam' => now(),
+                        'tgl_kembali' => now()->addDays(7),
+                        'status' => 'draft'
+                    ]
+                ]
+            );
+
             $draft = $draft->fresh(['detailPeminjaman.copyBuku','member','petugas']);
             
-         
+            
             return response()->json([
                 'status' => true,
                 'message' => 'Peminjaman berhasil diajukan, menunggu persetujuan petugas.',
@@ -158,10 +174,9 @@ class AuthController extends Controller
                 'message' => 'Terjadi kesalahan saat mengajukan peminjaman: ' . $e->getMessage(),
             ], 500);
         }
-       
     }   
 
-    public function returnBook()
+    public function returnBook(Request $request)
     {
         try{
             $member = Auth::guard('member')->user();
@@ -169,64 +184,147 @@ class AuthController extends Controller
                 return response()->json([
                     'status' => false,
                     'message' => 'Member tidak ditemukan.'
-                ], 404);
+                    ], 404);
             }
 
-        $peminjaman = Peminjaman::where('id_member', $member->id_member)
+                $validated = $request->validate([
+                    'id_buku_copy' => 'required|exists:copy_buku,id_buku_copy',
+                ]);
+
+                return DB::transaction(function () use ($member, $validated) {
+                    
+                    $peminjaman = Peminjaman::where('id_member', $member->id_member)    //
                     ->where('status', 'disetujui')
-                    ->whereHas('detailPeminjaman')
-                    ->latest('nomor_pinjam')
+                    ->whereHas('detailPeminjaman', function ($query) use ($validated) {
+                        $query->where('id_buku_copy', $validated['id_buku_copy'])
+                              ->where('status', 'dipinjam');
+                    })
+                    ->with('detailPeminjaman.copyBuku')
                     ->first();
 
-            if (!$peminjaman) {
-                return response()->json([
-                    'status' => false,
-                    'message' => 'Tidak ada peminjaman yang sedang dipinjam.'
-                ], 404);
-            }
+                    if (!$peminjaman) {
+                        return response()->json([
+                            'status' => false,
+                            'message' => 'Tidak ada peminjaman yang sedang dipinjam.'
+                        ], 404);
+                    }
 
-            foreach ($peminjaman->detailPeminjaman as $detail) {
-                $detail->tgl_kembali = now();
-                $detail->save();
+                    $detailSelected = $peminjaman->detailPeminjaman()
+                        ->where('id_buku_copy', $validated['id_buku_copy'])
+                        ->where('status', 'dipinjam')
+                        ->lockForUpdate()
+                        ->first();
 
-                // update status copy buku menjadi tersedia
-                $copyBuku = CopyBuku::find($detail->id_buku_copy);
-                if ($copyBuku) {
-                    $copyBuku->status = 'tersedia';
-                    $copyBuku->save();
+                        if (!$detailSelected) {
+                            return response()->json([
+                                'status' => false,
+                                'message' => 'Detail peminjaman tidak ditemukan / sudah dikembalikan.'
+                            ], 404);
+                        }
+
+                        $detailSelected->update([
+                            'status'      => 'dikembalikan',
+                            'tgl_kembali' => now(),
+                        ]);
+
+                    CopyBuku::where('id_buku_copy', $validated['id_buku_copy'])
+                        ->lockForUpdate()
+                        ->update(['status' => 'tersedia']);
+                    
+                    $sisa = $peminjaman->detailPeminjaman()
+                            ->where('status', 'dipinjam')
+                            ->count();
+
+                    if ($sisa === 0) {
+                        $peminjaman->update(['status' => 'selesai']);
+                    }
+
+                    $peminjaman->load(['detailPeminjaman.copyBuku', 'member', 'petugas']);
+
+                    return response()->json([
+                        'status' => true,
+                        'message' => 'Buku berhasil dikembalikan.',
+                        'data' => $peminjaman
+                    ]);
+                });
+
+                }catch (\Exception $e) {
+                    return response()->json([
+                        'status' => false,
+                        'message' => 'Terjadi kesalahan saat mengembalikan buku: ' . $e->getMessage(),
+                    ], 500);
                 }
-            }
-
-            // // menghitung denda jika ada keterlambatan
-            // foreach ($peminjaman->detailPeminjaman as $detail) {
-            //     $dueDate = $peminjaman->tgl_kembali;
-            //     $returnDate = $detail->tgl_kembali;
-
-            //     if ($returnDate->gt($dueDate)) {
-            //         $daysLate = $dueDate->diffInDays($returnDate);
-            //         $dendaPerDay = 2000; // contoh denda per hari
-            //         $totalDenda = $daysLate * $dendaPerDay;
-
-            //         // Simpan atau proses denda sesuai kebutuhan
-            //     }
-            // }
-            
-            $peminjaman->status = 'dikembalikan';
-            $peminjaman->save();
-            return response()->json([
-                'status' => true,
-                'message' => 'Buku berhasil dikembalikan.',
-                'data' => $peminjaman
-            ]);
-
-        }catch (\Exception $e) {
-            return response()->json([
-                'status' => false,
-                'message' => 'Terjadi kesalahan saat mengembalikan buku: ' . $e->getMessage(),
-            ], 500);
+                
         }
-        
     }
+
+
+    // public function returnBook()
+    // {
+    //     try{
+    //         $member = Auth::guard('member')->user();
+    //         if (!$member) {
+    //             return response()->json([
+    //                 'status' => false,
+    //                 'message' => 'Member tidak ditemukan.'
+    //             ], 404);
+    //         }
+
+    //     $peminjaman = Peminjaman::where('id_member', $member->id_member)
+    //                 ->where('status', 'disetujui')
+    //                 ->whereHas('detailPeminjaman')
+    //                 ->latest('nomor_pinjam')
+    //                 ->first();
+
+    //         if (!$peminjaman) {
+    //             return response()->json([
+    //                 'status' => false,
+    //                 'message' => 'Tidak ada peminjaman yang sedang dipinjam.'
+    //             ], 404);
+    //         }
+
+    //         foreach ($peminjaman->detailPeminjaman as $detail) {
+    //             $detail->tgl_kembali = now();
+    //             $detail->save();
+
+    //             // update status copy buku menjadi tersedia
+    //             $copyBuku = CopyBuku::find($detail->id_buku_copy);
+    //             if ($copyBuku) {
+    //                 $copyBuku->status = 'tersedia';
+    //                 $copyBuku->save();
+    //             }
+    //         }
+
+    //         // // menghitung denda jika ada keterlambatan
+    //         // foreach ($peminjaman->detailPeminjaman as $detail) {
+    //         //     $dueDate = $peminjaman->tgl_kembali;
+    //         //     $returnDate = $detail->tgl_kembali;
+
+    //         //     if ($returnDate->gt($dueDate)) {
+    //         //         $daysLate = $dueDate->diffInDays($returnDate);
+    //         //         $dendaPerDay = 2000; // contoh denda per hari
+    //         //         $totalDenda = $daysLate * $dendaPerDay;
+
+    //         //         // Simpan atau proses denda sesuai kebutuhan
+    //         //     }
+    //         // }
+            
+    //         $peminjaman->status = 'dikembalikan';
+    //         $peminjaman->save();
+    //         return response()->json([
+    //             'status' => true,
+    //             'message' => 'Buku berhasil dikembalikan.',
+    //             'data' => $peminjaman
+    //         ]);
+
+    //     }catch (\Exception $e) {
+    //         return response()->json([
+    //             'status' => false,
+    //             'message' => 'Terjadi kesalahan saat mengembalikan buku: ' . $e->getMessage(),
+    //         ], 500);
+    //     }
+        
+    // }
     
 
-}
+
