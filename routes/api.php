@@ -3,17 +3,18 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
-use App\Http\Middleware\MemberMiddleware;
-use App\Http\Middleware\PetugasMiddleware;
-
-use App\Http\Controllers\MemberController;
-use App\Http\Controllers\PetugasController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BukuController;
-use App\Http\Controllers\KategoriController;
+
+use App\Http\Middleware\MemberMiddleware;
+use App\Http\Controllers\MemberController;
+use App\Http\Middleware\PetugasMiddleware;
+use App\Http\Controllers\PetugasController;
 use App\Http\Controllers\CopyBukuController;
+use App\Http\Controllers\KategoriController;
+use App\Http\Controllers\PembayaranController;
 use App\Http\Controllers\PeminjamanController;
-use App\Http\Controllers\DetailPeminjamanController;
+
 
 Route::post('/register/member', [MemberController::class, 'store']);
 Route::post('/register/petugas', [PetugasController::class, 'store']);
@@ -33,7 +34,7 @@ route::get('/peminjaman/showLatest', [PeminjamanController::class, 'showLatest']
 
 //route member /api/member/...
 Route::middleware(['auth:sanctum', MemberMiddleware::class])->prefix('member')->group(function () {
-    
+
     Route::get('/profile', [MemberController::class, 'show']);
     Route::post('/profile/update', [MemberController::class, 'update']);
     Route::delete('/profile/delete', [MemberController::class, 'destroy']);
@@ -43,6 +44,10 @@ Route::middleware(['auth:sanctum', MemberMiddleware::class])->prefix('member')->
     Route::post('/detailPeminjaman/submit', [AuthController::class, 'submitDraft']);
 
     Route::put('/peminjaman/kembali', [AuthController::class, 'returnBook']);
+
+    route::get('/daftarDenda', [PembayaranController::class, 'daftarDenda']);
+    route::post('/bayarDenda', [PembayaranController::class, 'bayarDenda']);
+    route::get('/riwayatPembayaran', [PembayaranController::class, 'riwayatPembayaran']);
 });
 
 //route petugas /api/petugas/...
