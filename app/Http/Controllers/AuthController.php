@@ -12,6 +12,8 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use App\Models\Member;
+use App\Models\Denda;
+use Carbon\Carbon;
 
 
 class AuthController extends Controller
@@ -228,6 +230,22 @@ class AuthController extends Controller
                 ->lockForUpdate()
                 ->update(['status' => 'tersedia']);
 
+            $tglKembaliSeharusnya = Carbon::parse($peminjaman->tgl_kembali);
+            $tglSekarang = Carbon::now();
+
+            if ($tglSekarang->gt($tglKembaliSeharusnya)) {
+                $hariTelat = $tglSekarang->diffInDays($tglKembaliSeharusnya);
+                $hargaPerHari = 1000; // contoh Rp1000/hari
+                $totalDenda = $hariTelat * $hargaPerHari;
+
+                Denda::create([
+                    'nomor_pinjam'   => $peminjaman->nomor_pinjam,
+                    'hari_telat'     => $hariTelat,
+                    'harga_per_hari' => $hargaPerHari,
+                    'total_denda'    => $totalDenda,
+                    'status'         => 'belum'
+                ]);
+            }
             // ngecek apakah smua buku di peminjaman ini udah dikembaliin semua atau belum
             $isComplete = DetailPeminjaman::where('nomor_pinjam', $peminjaman->nomor_pinjam)
                 ->where('status', '!=', 'dikembalikan')
