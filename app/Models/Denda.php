@@ -36,7 +36,7 @@ class Denda extends Model
             'detail_pembayaran_denda',
             'id_denda',
             'id_pembayaran'
-        )->withPivot('nominal')
+        )->withPivot('jumlah_bayar')
          ->withTimestamps();
     }
 
