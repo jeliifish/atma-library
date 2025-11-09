@@ -34,7 +34,7 @@ class PembayaranController extends Controller
     public function bayarDenda(Request $request)
     {
         $request->validate([
-            'denda_ids' => 'required|array', 
+            'id_denda' => 'required|array', 
             'metode'    => 'required|in:cash,transfer,qris,ewallet',
         ]);
 
@@ -42,7 +42,7 @@ class PembayaranController extends Controller
 
         return DB::transaction(function () use ($request, $member) {
             // ambil denda yang dipilih dan belum dibayar
-            $dendaList = Denda::whereIn('id_denda', $request->denda_ids)
+            $dendaList = Denda::whereIn('id_denda', $request->id_denda)
                         ->where('status', 'belum')
                         ->whereHas('peminjaman', function($q) use ($member){
                             $q->where('id_member', $member->id_member);
@@ -66,7 +66,6 @@ class PembayaranController extends Controller
                 'tgl_bayar' => now(),
                 'total'     => $totalBayar,
                 'metode'    => $request->metode,
-                'status'    => 'lunas',
             ]);
 
             // detail pembayaran
@@ -74,7 +73,7 @@ class PembayaranController extends Controller
                 DetailPembayaranDenda::create([
                     'id_pembayaran' => $pembayaran->id_pembayaran,
                     'id_denda'      => $denda->id_denda,
-                    'jumlah_bayar'  => $denda->total_denda,
+                    'nominal_bayar'  => $denda->total_denda,
                 ]);
 
                 // update status denda jadi lunas

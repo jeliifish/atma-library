@@ -6,14 +6,15 @@ use Illuminate\Database\Eloquent\Model;
 
 class DetailPembayaranDenda extends Model
 {
-    protected $table = 'detail_pembayaran_denda';
+    protected $table = 'detail_pembayaran';
     protected $primaryKey = 'id_detail'; // kalau kamu punya kolom id sendiri
     public $timestamps = true;
 
     protected $fillable = [
         'id_pembayaran',
         'id_denda',
-        'jumlah_bayar'
+        'nominal_bayar',
+        
     ];
 
     public function pembayaranDenda()
