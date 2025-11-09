@@ -240,6 +240,7 @@ class AuthController extends Controller
 
                 Denda::create([
                     'nomor_pinjam'   => $peminjaman->nomor_pinjam,
+                    'id_buku_copy'   => $validated['id_buku_copy'],
                     'hari_telat'     => $hariTelat,
                     'harga_per_hari' => $hargaPerHari,
                     'total_denda'    => $totalDenda,
