@@ -4,16 +4,15 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class Pembayaran extends Model
+class PembayaranDenda extends Model
 {
-    protected $table = 'pembayaran';
+    protected $table = 'pembayaran_denda';
     protected $primaryKey = 'id_pembayaran';
     protected $fillable = [
         'id_member',
-        'jumlah_bayar',
-        'metode',
-        'status',
-        'tgl_bayar'
+        'tgl_bayar',
+        'total_bayar',
+        'status', // 'belum' atau 'lunas'
     ];
 
     public function member()
@@ -25,10 +24,10 @@ class Pembayaran extends Model
     {
         return $this->belongsToMany(
             Denda::class,
-            'detail_pembayaran',
+            'detail_pembayaran_denda',
             'id_pembayaran',
             'id_denda'
-        )->withPivot('nominal')
+        )->withPivot('nominal_bayar')
          ->withTimestamps();
     }
 }
