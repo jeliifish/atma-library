@@ -13,7 +13,6 @@ class PembayaranDenda extends Model
         'tgl_bayar',
         'total',
         'metode',
-        'status', // 'belum' atau 'lunas'
     ];
 
     public function member()
