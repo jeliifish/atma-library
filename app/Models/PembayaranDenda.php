@@ -6,12 +6,13 @@ use Illuminate\Database\Eloquent\Model;
 
 class PembayaranDenda extends Model
 {
-    protected $table = 'pembayaran_denda';
+    protected $table = 'pembayaran';
     protected $primaryKey = 'id_pembayaran';
     protected $fillable = [
         'id_member',
         'tgl_bayar',
-        'total_bayar',
+        'total',
+        'metode',
         'status', // 'belum' atau 'lunas'
     ];
 
@@ -24,10 +25,15 @@ class PembayaranDenda extends Model
     {
         return $this->belongsToMany(
             Denda::class,
-            'detail_pembayaran_denda',
+            'detail_pembayaran',
             'id_pembayaran',
             'id_denda'
         )->withPivot('nominal_bayar')
          ->withTimestamps();
+    }
+
+    public function detailPembayaran()
+    {
+        return $this->hasMany(DetailPembayaranDenda::class, 'id_pembayaran', 'id_pembayaran');
     }
 }
