@@ -12,7 +12,7 @@ use App\Models\DetailPembayaranDenda;
 
 class PembayaranController extends Controller
 {
-    // 1. Lihat daftar denda yang belum dibayar
+    //daftar denda yang belum dibayar
     public function daftarDenda()
     {
         $member = Auth::guard('member')->user();
@@ -31,11 +31,10 @@ class PembayaranController extends Controller
         ]);
     }
 
-    // 2. Bayar denda
     public function bayarDenda(Request $request)
     {
         $request->validate([
-            'denda_ids' => 'required|array',  // array id_denda
+            'denda_ids' => 'required|array', 
             'metode'    => 'required|in:cash,transfer,qris,ewallet',
         ]);
 
@@ -61,7 +60,7 @@ class PembayaranController extends Controller
             // total pembayaran
             $totalBayar = $dendaList->sum('total_denda');
 
-            // buat record pembayaran
+            // record pembayaran
             $pembayaran = PembayaranDenda::create([
                 'id_member' => $member->id_member,
                 'tgl_bayar' => now(),
@@ -70,7 +69,7 @@ class PembayaranController extends Controller
                 'status'    => 'lunas',
             ]);
 
-            // buat detail pembayaran
+            // detail pembayaran
             foreach ($dendaList as $denda) {
                 DetailPembayaranDenda::create([
                     'id_pembayaran' => $pembayaran->id_pembayaran,
@@ -92,7 +91,6 @@ class PembayaranController extends Controller
         });
     }
 
-    // 3. Lihat riwayat pembayaran
     public function riwayatPembayaran()
     {
         $member = Auth::guard('member')->user();
