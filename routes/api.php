@@ -45,9 +45,10 @@ Route::middleware(['auth:sanctum', MemberMiddleware::class])->prefix('member')->
 
     Route::put('/peminjaman/kembali', [AuthController::class, 'returnBook']);
 
-    route::get('/daftarDenda', [PembayaranController::class, 'daftarDenda']);
-    route::post('/bayarDenda', [PembayaranController::class, 'bayarDenda']);
-    route::get('/riwayatPembayaran', [PembayaranController::class, 'riwayatPembayaran']);
+    //route pembayaran
+    Route::get('/denda', [PembayaranController::class, 'daftarDenda']); // daftar denda belum dibayar
+    Route::post('/denda/bayar', [PembayaranController::class, 'bayarDenda']); // bayar denda
+    Route::get('/denda/riwayat', [PembayaranController::class, 'riwayatPembayaran']); // riwayat pembayaran
 });
 
 //route petugas /api/petugas/...
@@ -79,10 +80,7 @@ Route::get('/kategori/{id_kategori}', [KategoriController::class, 'show']);
 Route::put('/kategori/{id_kategori}', [KategoriController::class, 'update']);
 Route::delete('/kategori/{id_kategori}', [KategoriController::class, 'destroy']);
 
-//route pembayaran
-Route::get('/denda', [\App\Http\Controllers\PembayaranController::class, 'daftarDenda']); // daftar denda belum dibayar
-Route::post('/denda/bayar', [\App\Http\Controllers\PembayaranController::class, 'bayarDenda']); // bayar denda
-Route::get('/denda/riwayat', [\App\Http\Controllers\PembayaranController::class, 'riwayatPembayaran']); // riwayat pembayaran
+
 
 // Route::get('/user', function (Request $request) {
 //     return $request->user();
