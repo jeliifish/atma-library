@@ -20,25 +20,35 @@ class AuthController extends Controller
     public function login(Request $request)
     {
         $member = Member::where('email', $request->email)->first();
-        if ($member && Hash::check( $request->password, $member->password)) {
+        if ($member && Hash::check($request->password, $member->password)) {
             $token = $member->createToken('member')->plainTextToken;
 
-                return response()->json([
-                    'message' => 'Login berhasil',
-                    'token'   => $token,
-                    'member'  => $member
-                ]);
+            return response()->json([
+                'message' => 'Login berhasil',
+                'token'   => $token,
+                'user'    => [
+                    'id'    => $member->id,
+                    'nama'  => $member->nama,
+                    'email' => $member->email,
+                    'role'  => 'member'
+                ]
+            ]);
         }
 
         $petugas = Petugas::where('email', $request->email)->first();
-        if ($petugas && Hash::check( $request->password, $petugas->password)) {
+        if ($petugas && Hash::check($request->password, $petugas->password)) {
             $token = $petugas->createToken('petugas')->plainTextToken;
 
-                return response()->json([
-                    'message' => 'Login berhasil',
-                    'token'   => $token,
-                    'petugas'  => $petugas
-                ]);
+            return response()->json([
+                'message' => 'Login berhasil',
+                'token'   => $token,
+                'user'    => [
+                    'id'    => $petugas->id,
+                    'nama'  => $petugas->nama,
+                    'email' => $petugas->email,
+                    'role'  => 'petugas'
+                ]
+            ]);
         }
 
          if (!$petugas && !$member) {
