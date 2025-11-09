@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id('id_detail_pembayaran');
             $table->unsignedBigInteger('id_pembayaran');
             $table->unsignedBigInteger('id_denda');
-            $table->integer('nominal_bayar');
+            $table->decimal('nominal_bayar',  12, 0);
             $table->timestamps();
 
             $table->foreign('id_pembayaran')

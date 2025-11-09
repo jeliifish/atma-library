@@ -16,8 +16,8 @@ return new class extends Migration
             $table->unsignedBigInteger('nomor_pinjam');
             $table->string('id_buku_copy');
             $table->integer('hari_telat');
-            $table->float('harga_per_hari');
-            $table->float('total_denda');
+            $table->decimal('harga_per_hari', 12, 0);
+            $table->decimal('total_denda',  12, 0);
             $table->enum('status', ['belum', 'lunas'])->default('belum');
             $table->timestamps();
 
