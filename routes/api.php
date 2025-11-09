@@ -74,6 +74,11 @@ Route::get('/kategori/{id_kategori}', [KategoriController::class, 'show']);
 Route::put('/kategori/{id_kategori}', [KategoriController::class, 'update']);
 Route::delete('/kategori/{id_kategori}', [KategoriController::class, 'destroy']);
 
+//route pembayaran
+Route::get('/denda', [\App\Http\Controllers\PembayaranController::class, 'daftarDenda']); // daftar denda belum dibayar
+Route::post('/denda/bayar', [\App\Http\Controllers\PembayaranController::class, 'bayarDenda']); // bayar denda
+Route::get('/denda/riwayat', [\App\Http\Controllers\PembayaranController::class, 'riwayatPembayaran']); // riwayat pembayaran
+
 // Route::get('/user', function (Request $request) {
 //     return $request->user();
 // })->middleware('auth:sanctum');
