@@ -29,6 +29,18 @@ class BukuController extends Controller
         ], 200);
     }
 
+    public function randomBooks()//utk show random book di catalog recommendations
+    {
+        $books = Buku::inRandomOrder()->limit(8)->get();
+
+        return response()->json([
+            'status' => true,
+            'message' => '24 random books fetched successfully.',
+            'data' => $books
+        ], 200);
+    }
+    //nnti tambahin yg lain2
+
     public function store(Request $request)
     {
         try {
