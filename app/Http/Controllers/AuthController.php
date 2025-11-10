@@ -12,6 +12,8 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use App\Models\Member;
+use App\Models\Denda;
+use Carbon\Carbon;
 
 
 class AuthController extends Controller
@@ -207,7 +209,9 @@ class AuthController extends Controller
                     $q->where('id_buku_copy', $validated['id_buku_copy'])
                     ->where('status', '!=', 'dikembalikan');
                 })
+                ->orderByDesc('nomor_pinjam') 
                 ->first();
+
 
             if (!$peminjaman) {
                 return response()->json([
@@ -223,7 +227,7 @@ class AuthController extends Controller
                 ->lockForUpdate()
                 ->update([
                     'status'      => 'dikembalikan',
-                    'tgl_kembali' => now(),
+                    'tgl_kembali' => now()->addDays(8),
                 ]); // mengembalikan jumlah baris yang diupdate
 
             if ($updatedDetail === 0) {
@@ -238,6 +242,25 @@ class AuthController extends Controller
                 ->lockForUpdate()
                 ->update(['status' => 'tersedia']);
 
+            $due = Carbon::parse($peminjaman->tgl_kembali)->startOfDay();
+            $now = Carbon::now()->startOfDay();
+            $hariTelat = $due->diffInDays($now, false);
+            $hariTelat = max(0, $hariTelat);
+
+            if ($hariTelat > 0) {
+                
+                $hargaPerHari = 1000; // contoh Rp1000/hari
+                $totalDenda = $hariTelat * $hargaPerHari;
+
+                Denda::create([
+                    'nomor_pinjam'   => $peminjaman->nomor_pinjam,
+                    'id_buku_copy'   => $validated['id_buku_copy'],
+                    'hari_telat'     => $hariTelat,
+                    'harga_per_hari' => $hargaPerHari,
+                    'total_denda'    => $totalDenda,
+                    'status'         => 'belum'
+                ]);
+            }
             // ngecek apakah smua buku di peminjaman ini udah dikembaliin semua atau belum
             $isComplete = DetailPeminjaman::where('nomor_pinjam', $peminjaman->nomor_pinjam)
                 ->where('status', '!=', 'dikembalikan')
