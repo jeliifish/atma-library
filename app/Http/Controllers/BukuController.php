@@ -40,7 +40,24 @@ class BukuController extends Controller
         ]);
     }
 
-    
+    public function search(Request $request)
+    {
+        $query = $request->q;
+
+        if (!$query) {
+            return response()->json(['data' => []]);
+        }
+
+        $books = Buku::where(function ($q) use ($query) {
+            $q->where('judul', 'LIKE', "%$query%")
+                ->orWhere('penulis', 'LIKE', "%$query%")
+                ->orWhere('ISBN', 'LIKE', "%$query%");
+        })
+        ->limit(10)
+        ->get();
+
+        return response()->json(['data' => $books]);
+    }
 
     public function store(Request $request)
     {
