@@ -14,6 +14,7 @@ return new class extends Migration
         Schema::create('buku', function (Blueprint $table) {
             $table->string('id_buku',10)->primary();
             $table->string('judul');
+            $table->text('deskripsi');
             $table->string('penulis');
             $table->string('penerbit');
             $table->string('ISBN');
