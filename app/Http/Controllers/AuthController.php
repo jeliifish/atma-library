@@ -29,7 +29,7 @@ class AuthController extends Controller
                 'message' => 'Login berhasil',
                 'token'   => $token,
                 'user'    => [
-                    'id'    => $member->id,
+                    'id'    => $member->id_member,
                     'nama'  => $member->nama,
                     'email' => $member->email,
                     'role'  => 'member'
@@ -45,7 +45,7 @@ class AuthController extends Controller
                 'message' => 'Login berhasil',
                 'token'   => $token,
                 'user'    => [
-                    'id'    => $petugas->id,
+                    'id'    => $petugas->id_petugas,
                     'nama'  => $petugas->nama,
                     'email' => $petugas->email,
                     'role'  => 'petugas'
