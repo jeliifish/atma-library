@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use Exception;
 use App\Models\Buku;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
-use Exception;
+use Illuminate\Validation\ValidationException;
+
+
 
 class BukuController extends Controller
 {
@@ -20,7 +22,7 @@ class BukuController extends Controller
      */
     public function index()
     {
-        $buku = Buku::all();
+        $buku = Buku::with('kategori')->get();
 
         return response()->json([
             'status' => true,
@@ -67,14 +69,18 @@ class BukuController extends Controller
                 [
                     'judul' => 'required|string|max:255',
                     'penulis' => 'required|string|max:255',
+                    'deskripsi' => 'required|string',
                     'penerbit' => 'required|string|max:255',
                     'ISBN' => 'required|string|max:50|unique:buku,ISBN',
                     'tahun_terbit' => 'required|integer|min:1000|max:' . date('Y'),
                     'url_foto_cover' => 'nullable|string|max:255',
+                    'id_kategori' => 'required|array|min:1',
+                    'id_kategori.*' => 'string|exists:kategori,id_kategori',
                 ],
                 [
                     'judul.required' => 'Judul buku wajib diisi.',
                     'penulis.required' => 'Nama penulis wajib diisi.',
+                    'deskripsi' => 'Deskripsi wajib diisi',
                     'penerbit.required' => 'Nama penerbit wajib diisi.',
                     'ISBN.required' => 'Nomor ISBN wajib diisi.',
                     'ISBN.unique' => 'Nomor ISBN sudah terdaftar.',
@@ -85,12 +91,16 @@ class BukuController extends Controller
                 ]
             );
 
+            $id_kategori = $validated['id_kategori'];
+            unset($validated['id_kategori']);
+
             $buku = Buku::create($validated);
+            $buku->kategori()->sync($id_kategori);
 
             return response()->json([
                 'status' => true,
                 'message' => 'Buku berhasil ditambahkan',
-                'data' => $buku
+                'data' => $buku->load('kategori')
             ], 201);
 
         } catch (Exception $e) {
@@ -151,19 +161,30 @@ class BukuController extends Controller
                 'penerbit' => 'sometimes|required|string|max:255',
                 'ISBN' => 'sometimes|required|string|max:50|unique:buku,ISBN,' . $id_buku . ',id_buku',
                 'tahun_terbit' => 'sometimes|required|integer',
-                'url_foto_cover' => 'nullable|string|max:255'
+                'url_foto_cover' => 'nullable|string|max:255',
+                
+                'id_kategori' => 'sometimes|array',
+                'id_kategori.*' => 'string|exists:kategori,id_kategori',
             ]);
 
+            $dataBuku = collect($validated)->except('id_kategori')->toArray();
+
+
+
             //update
-            $buku->update($validated);
+            $buku->update($dataBuku);
+
+            if($request->has('id_kategori')){
+                $buku->kategori()->sync($request->id_kategori);
+            }
 
             return response()->json([
                 'status' => true,
                 'message' => 'Buku berhasil diperbarui.',
-                'data' => $buku
+                'data' => $buku->load('kategori')
             ], 200);
 
-        } catch (\Illuminate\Validation\ValidationException $e) {
+        } catch (ValidationException $e) {
             
             return response()->json([
                 'status' => false,
@@ -206,6 +227,56 @@ class BukuController extends Controller
             return response()->json([
                 'status' => false,
                 'message' => 'Terjadi kesalahan saat menghapus buku: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function showBukuByKategori(Request $request){
+        try{
+            $validated = $request->validate([
+                'id_kategori' => 'required',
+                'id_kategori.*' => 'string|exists:kategori,id_kategori'
+            ], [
+                'id_kategori.required' => 'ID kategori wajib diisi.',
+                'id_kategori.exists' => 'Kategori tidak ditemukan.'
+            ]);
+
+            $id_kategori = $validated['id_kategori'];
+
+            // Ambil semua buku yang punya minimal salah satu kategori tersebut
+          $buku = Buku::whereHas('kategori', function ($q) use ($id_kategori) {
+                $q->whereIn('kategori.id_kategori', $id_kategori);
+            })
+            ->with('kategori')
+            ->get();
+
+            if($buku->isEmpty()){
+                return response()->json([
+                    'status' => true,
+                    'message' => 'Belum ada buku di kategori ini.',
+                    'data' => []
+                ], 200);
+            }
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Belum ada buku di kategori ini.',
+                'data' => $buku
+            ], 200);
+
+
+        }catch (ValidationException $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Validasi gagal.',
+                'errors' => $e->errors()
+            ], 422);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Terjadi kesalahan server: ' . $e->getMessage(),
+                'data' => []
             ], 500);
         }
     }

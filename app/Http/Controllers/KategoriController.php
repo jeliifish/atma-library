@@ -7,7 +7,6 @@ use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 use Exception;
 use Illuminate\Database\QueryException;
-
 class KategoriController extends Controller
 {
     
@@ -131,7 +130,7 @@ class KategoriController extends Controller
                 'data' => $kategori
             ], 200);
 
-        } catch (\Illuminate\Validation\ValidationException $e) {
+        } catch (ValidationException $e) {
             return response()->json([
                 'status' => false,
                 'message' => 'Validasi gagal.',

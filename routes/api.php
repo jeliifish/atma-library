@@ -26,6 +26,7 @@ Route::get('/buku', [BukuController::class, 'index']);
 Route::get('/buku/search', [BukuController::class, 'search']);
 Route::get('/books/random', [BukuController::class, 'randomBooks']);
 Route::get('/buku/{id_buku}', [BukuController::class, 'show']);
+Route::post('/buku/byKategori', [BukuController::class, 'showBukuByKategori']);
 
 // route public /api. .
 Route::get('/copyBuku', [CopyBukuController::class, 'index']);
