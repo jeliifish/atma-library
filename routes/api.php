@@ -24,6 +24,7 @@ Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth:sanc
 // route public /api. .
 Route::get('/buku', [BukuController::class, 'index']);
 Route::get('/buku/{id_buku}', [BukuController::class, 'show']);
+Route::post('/buku/byKategori', [BukuController::class, 'showBukuByKategori']);
 
 // route public /api. .
 Route::get('/copyBuku', [CopyBukuController::class, 'index']);
