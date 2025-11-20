@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Pivot;
+use Illuminate\Database\Eloquent\Relations\Pivot;
 
 class BukuKategori extends Pivot
 {

@@ -46,9 +46,10 @@ class Buku extends Model
         return $this->hasMany(CopyBuku::class, 'id_buku', 'id_buku');
     }
 
-    public function kategoris()
+    public function kategori()
     {
-        return $this->belongsToMany(Kategori::class, 'buku_kategori', 'id_buku', 'id_kategori');
+        return $this->belongsToMany(Kategori::class, 'buku_kategori', 'id_buku', 'id_kategori')
+        ->using(BukuKategori::class);
     }
 
 }
