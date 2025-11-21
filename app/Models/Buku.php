@@ -16,6 +16,7 @@ class Buku extends Model
         'judul',
         'penulis',
         'penerbit',
+        'deskripsi',
         'ISBN',
         'tahun_terbit',
         'url_foto_cover'
@@ -40,7 +41,7 @@ class Buku extends Model
             }
         });
     }
-
+    
     public function copyBuku()
     {
         return $this->hasMany(CopyBuku::class, 'id_buku', 'id_buku');
