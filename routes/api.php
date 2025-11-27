@@ -42,6 +42,8 @@ Route::middleware(['auth:sanctum', MemberMiddleware::class])->prefix('member')->
     Route::post('/profile/update', [MemberController::class, 'update']);
     Route::delete('/profile/delete', [MemberController::class, 'destroy']);
 
+    Route::post('/changePassword', [MemberController::class, 'changePassword']);
+
     Route::post('/peminjaman', [PeminjamanController::class, 'store']);
     Route::post('/detailPeminjaman', [AuthController::class, 'addToDraft']);
     Route::post('/detailPeminjaman/submit', [AuthController::class, 'submitDraft']);
@@ -60,6 +62,8 @@ Route::middleware(['auth:sanctum', PetugasMiddleware::class])->prefix('petugas')
     Route::get('/profile', [PetugasController::class, 'show']);
     Route::post('/profile/update', [PetugasController::class, 'update']);
     Route::delete('/profile/delete', [PetugasController::class, 'destroy']);
+
+    Route::post('/changePassword', [PetugasController::class, 'changePassword']);
 
     Route::post('/buku', [BukuController::class, 'store']);
     Route::put('/buku/{id_buku}', [BukuController::class, 'update']);

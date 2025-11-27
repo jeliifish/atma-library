@@ -6,6 +6,7 @@ use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Http\Request;
 use App\Models\Member;
 use App\Models\Petugas;
@@ -219,4 +220,40 @@ class PetugasController extends Controller
             ], 500);
         }
     }
+
+     public function changePassword(Request $request)
+    {
+        // user yang lagi login diambil dari middleware/auth
+        $petugas = Auth::guard('petugas')->user(); // kalau pakai guard khusus: auth('member')->user();
+
+        $validated = $request->validate([
+            'current_password'      => 'required',
+            'new_password'          => 'required|min:8|confirmed', 
+        ],
+        [
+            'new_password.confirmed' => 'Konfirmasi password tidak sesuai.',
+            'new_password.min'       => 'Password baru harus memiliki minimal 8 karakter.',
+            'current_password.required' => 'Password lama harus diisi.',
+            'new_password.required' => 'Password baru harus diisi.',
+        ]);
+
+        // cek password lama
+        if (!Hash::check($validated['current_password'], $petugas->password)) {
+            return response()->json([
+                'status'  => false,
+                'message' => 'Password lama tidak sesuai.',
+            ], 422);
+        }
+        // update password baru (di-hash)
+        $petugas->password = Hash::make($validated['new_password']);
+        $petugas->save();
+        $petugas->save();
+
+        return response()->json([
+            'status'  => true,
+            'message' => 'Password berhasil diubah.',
+        ]);
+    }
+
+    
 }
