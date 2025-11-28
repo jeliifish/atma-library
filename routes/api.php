@@ -23,6 +23,7 @@ Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth:sanc
 
 // route public /api. .
 Route::get('/buku', [BukuController::class, 'index']);
+Route::post('/buku/create', [BukuController::class, 'store']);
 Route::get('/buku/search', [BukuController::class, 'search']);
 Route::get('/books/random', [BukuController::class, 'randomBooks']);
 Route::get('/buku/{id_buku}', [BukuController::class, 'show']);
