@@ -42,17 +42,13 @@ class Buku extends Model
         });
     }
 
-    public function getUrlFotoCoverAttribute($value)
+   public function getUrlFotoCoverAttribute($value)
     {
-        // Jika null → pakai gambar default
         if (!$value) {
-            return url('images/default-buku.jpeg');
+            return null;
         }
 
-        // Jika file disimpan di storage/public/covers/...
-        if (str_starts_with($value, 'covers/')) {
-            return url('storage/' . $value);
-        }
+        return $value; // karena dia pure URL internet
     }
 
 
