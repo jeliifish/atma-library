@@ -25,6 +25,19 @@ class Member extends Authenticatable
         'status'
     ];
 
+    public function getUrlFotoProfilAttribute($value)
+    {
+        if (!$value) {
+            return url('images/default-profile.jpeg');
+        }
+
+        if (str_starts_with($value, 'profile/')) {
+            return url('storage/' . $value);
+         }
+
+    }
+
+
     protected function casts(): array
     {
         return [
