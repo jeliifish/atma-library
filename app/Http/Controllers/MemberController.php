@@ -64,7 +64,8 @@ class MemberController extends Controller
 
             $data['tgl_daftar'] = now()->toDateString();
             $data['status'] = 'aktif';
-            $data['url_foto_profil'] = 'images/default-profile.jpeg'; // path relatif dari public/
+
+            $data['url_foto_profil'] = 'images/default-profile.jpeg'; 
 
             $member = Member::create($data);
 
@@ -141,7 +142,8 @@ class MemberController extends Controller
                         Rule::unique('member','email')->ignore($member->id_member, 'id_member'),
                     ],
                     'alamat'     => 'sometimes|nullable|string|max:255',
-                    'no_telp'    => 'sometimes|nullable|string|max:30'
+                    'no_telp'    => 'sometimes|nullable|string|max:30',
+                    'url_foto_profil' => 'sometimes|image|mimes:jpg,jpeg,png,webp|max:2048',
                 ]
             );
 
@@ -169,19 +171,9 @@ class MemberController extends Controller
             $data = $validator->validated();
 
             if($request->hasFile('url_foto_profil')){
-                $image = $request->url_foto_profil;
-                $imageName = $image->getClientOriginalName();
-                $image->move(public_path('storage/profile'), $imageName);
-                $member->update([
-                    'url_foto_profil' => 'profile/' . $imageName
-                ]);// path relatif dari public/
-            }else{
-                $imageName = $member->url_foto_profil;
-                $member->update([
-                    'url_foto_profil' => $imageName,
-                ]);
+                $path = $request->file('url_foto_profil')->store('profile', 'public');
+                $data['url_foto_profil'] = $path;
             }
-
 
 
             $member->update($data);

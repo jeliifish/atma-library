@@ -25,6 +25,20 @@ class Petugas extends Authenticatable
         'status'
     ];
 
+    public function getUrlFotoProfilAttribute($value)
+    {
+        // pas pertama kali store langsung ngembalin url defaultnyaa
+        if (!$value) {
+            return url('images/default-profil.jpeg');
+        }
+
+         // kalauu udah ada foto profilenya nanti dia bakal return url + path fotonya   
+        if (str_starts_with($value, 'profile/')) {
+            return url('storage/' . $value);
+        }
+    }
+
+
     protected function casts(): array
     {
         return [

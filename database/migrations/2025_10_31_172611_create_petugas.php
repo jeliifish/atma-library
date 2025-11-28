@@ -19,7 +19,7 @@ return new class extends Migration
             $table->string('alamat');
             $table->string('email');
             $table->string('no_telp');
-            $table->binary('url_foto_profil');
+            $table->string('url_foto_profil')->nullable();;
             $table->enum('status', ['aktif', 'cuti']);
             $table->timestamps();
         });
