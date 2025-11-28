@@ -15,7 +15,7 @@ class Peminjaman extends Model
         'id_petugas',
         'tgl_pinjam',
         'tgl_kembali',
-        'status'
+        'status',
     ];
 
 

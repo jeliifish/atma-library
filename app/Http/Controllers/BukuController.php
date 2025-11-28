@@ -9,6 +9,7 @@ use Illuminate\Validation\ValidationException;
 
 
 
+
 class BukuController extends Controller
 {
     // Aktifkan middleware auth sanctum
@@ -73,7 +74,7 @@ class BukuController extends Controller
                     'penerbit' => 'required|string|max:255',
                     'ISBN' => 'required|string|max:50|unique:buku,ISBN',
                     'tahun_terbit' => 'required|integer|min:1000|max:' . date('Y'),
-                    'url_foto_cover' => 'nullable|string|max:255',
+                    'url_foto_cover' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
                     'id_kategori' => 'required|array|min:1',
                     'id_kategori.*' => 'string|exists:kategori,id_kategori',
                 ],
@@ -93,6 +94,11 @@ class BukuController extends Controller
 
             $id_kategori = $validated['id_kategori'];
             unset($validated['id_kategori']);
+
+            if($request->hasFile('url_foto_cover')){
+                $path = $request->file('url_foto_cover')->store('covers', 'public');
+                $validated['url_foto_cover'] = $path;
+            }
 
             $buku = Buku::create($validated);
             $buku->kategori()->sync($id_kategori);
@@ -158,18 +164,25 @@ class BukuController extends Controller
             $validated = $request->validate([
                 'judul' => 'sometimes|required|string|max:255',
                 'penulis' => 'sometimes|required|string|max:255',
+                'deskripsi' => 'sometimes|string',
                 'penerbit' => 'sometimes|required|string|max:255',
                 'ISBN' => 'sometimes|required|string|max:50|unique:buku,ISBN,' . $id_buku . ',id_buku',
                 'tahun_terbit' => 'sometimes|required|integer',
-                'url_foto_cover' => 'nullable|string|max:255',
+                'url_foto_cover' => 'sometimes|image|mimes:jpg,jpeg,png,webp|max:2048',
                 
                 'id_kategori' => 'sometimes|array',
                 'id_kategori.*' => 'string|exists:kategori,id_kategori',
             ]);
 
+             if($request->hasFile('url_foto_cover')){
+                $path = $request->file('url_foto_cover')->store('covers', 'public');
+                $validated['url_foto_cover'] = $path;
+            }
+
+
             $dataBuku = collect($validated)->except('id_kategori')->toArray();
 
-
+           
 
             //update
             $buku->update($dataBuku);

@@ -66,7 +66,7 @@ Route::middleware(['auth:sanctum', PetugasMiddleware::class])->prefix('petugas')
     Route::post('/changePassword', [PetugasController::class, 'changePassword']);
 
     Route::post('/buku', [BukuController::class, 'store']);
-    Route::put('/buku/{id_buku}', [BukuController::class, 'update']);
+    Route::post('/buku/{id_buku}', [BukuController::class, 'update']);
     Route::delete('/buku/{id_buku}', [BukuController::class, 'destroy']);
 
     Route::post('/copyBuku', [CopyBukuController::class, 'store']);

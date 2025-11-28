@@ -16,6 +16,7 @@ class Buku extends Model
         'judul',
         'penulis',
         'penerbit',
+        'deskripsi',
         'ISBN',
         'tahun_terbit',
         'url_foto_cover'
@@ -40,6 +41,20 @@ class Buku extends Model
             }
         });
     }
+
+    public function getUrlFotoCoverAttribute($value)
+    {
+        // Jika null → pakai gambar default
+        if (!$value) {
+            return url('images/default-buku.jpeg');
+        }
+
+        // Jika file disimpan di storage/public/covers/...
+        if (str_starts_with($value, 'covers/')) {
+            return url('storage/' . $value);
+        }
+    }
+
 
     public function copyBuku()
     {

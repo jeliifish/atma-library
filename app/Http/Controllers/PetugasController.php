@@ -130,7 +130,8 @@ class PetugasController extends Controller
                         Rule::unique('petugas','email')->ignore($petugas->id_petugas, 'id_petugas'),
                     ],
                     'alamat'     => 'sometimes|nullable|string|max:255',
-                    'no_telp'    => 'sometimes|nullable|string|max:30'
+                    'no_telp'    => 'sometimes|nullable|string|max:30',
+                    'url_foto_profil' => 'sometimes|image|mimes:jpg,jpeg,png,webp|max:2048',
                 ],
                 [
                     'email.unique'      => 'Email sudah digunakan.',
@@ -162,17 +163,8 @@ class PetugasController extends Controller
             $data = $validator->validated();
             
             if($request->hasFile('url_foto_profil')){
-                $image = $request->url_foto_profil;
-                $imageName = $image->getClientOriginalName();
-                $image->move(public_path('storage/profile'), $imageName);
-                $petugas->update([
-                    'url_foto_profil' => 'profile/' . $imageName
-                ]);// path relatif dari public/
-            }else{
-                $imageName = $petugas->url_foto_profil;
-                $petugas->update([
-                    'url_foto_profil' => $imageName,
-                ]);
+                $path = $request->file('url_foto_profil')->store('profile', 'public');
+                $data['url_foto_profil'] = $path;
             }
 
 
