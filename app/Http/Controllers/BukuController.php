@@ -51,13 +51,14 @@ class BukuController extends Controller
             return response()->json(['data' => []]);
         }
 
-        $books = Buku::where(function ($q) use ($query) {
-            $q->where('judul', 'LIKE', "%$query%")
-                ->orWhere('penulis', 'LIKE', "%$query%")
-                ->orWhere('ISBN', 'LIKE', "%$query%");
-        })
-        ->limit(10)
-        ->get();
+        $books = Buku::with('kategori')
+            ->where(function ($q) use ($query) {
+                $q->where('judul', 'LIKE', "%$query%")
+                    ->orWhere('penulis', 'LIKE', "%$query%")
+                    ->orWhere('ISBN', 'LIKE', "%$query%");
+            })
+            ->limit(10)
+            ->get();
 
         return response()->json(['data' => $books]);
     }
