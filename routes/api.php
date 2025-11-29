@@ -47,6 +47,8 @@ Route::middleware(['auth:sanctum', MemberMiddleware::class])->prefix('member')->
     Route::post('/peminjaman', [PeminjamanController::class, 'store']);
     Route::post('/detailPeminjaman', [AuthController::class, 'addToDraft']);
     Route::post('/detailPeminjaman/submit', [AuthController::class, 'submitDraft']);
+    
+    Route::get('/cart', [AuthController::class, 'getDraft']);
 
     Route::put('/peminjaman/kembali', [AuthController::class, 'returnBook']);
 

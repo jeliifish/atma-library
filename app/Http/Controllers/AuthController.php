@@ -292,4 +292,28 @@ class AuthController extends Controller
         ], 500);
     }
   }
+
+  // untuk ambil detail peminjaman yg masih draft
+ public function getDraft()
+    {
+         $member = Auth::guard('member')->user();
+
+        $draft = Peminjaman::with(['detailPeminjaman.copyBuku.buku'])
+            ->where('id_member', $member->id_member)
+            ->where('status', 'draft')
+            ->first();
+            if (!$draft) {
+                return response()->json([
+                    'status'  => true,
+                    'message' => 'Draft kosong.',
+                    'data'    => null,
+                ]);
+            }
+
+        return response()->json([
+            'status'  => true,
+            'message' => 'Draft ditemukan.',
+            'data'    => $draft,
+        ]);
+    }
 }
