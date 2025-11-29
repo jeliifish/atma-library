@@ -117,12 +117,11 @@ class MemberController extends Controller
         ], 200);
     }
 
-    public function update(Request $request)
+   public function update(Request $request)
     {
-        try{
-            
+        try {
             $member = Auth::guard('member')->user();
-            if(!$member){
+            if (!$member) {
                 return response()->json([
                     'status' => false,
                     'message' => 'Member tidak ditemukan',
@@ -130,33 +129,30 @@ class MemberController extends Controller
                 ], 404);
             }
 
-             $validator = Validator::make($request->all(),
-                [
-                    'nama'       => 'sometimes|nullable|string',
-                    'username' => [
-                        'sometimes', 'nullable', 'string', 'max:50',
-                        Rule::unique('member','username')->ignore($member->id_member, 'id_member'),
-                    ],
-
-                    'email' => [
-                        'sometimes', 'nullable', 'email', 'max:100',
-                        Rule::unique('member','email')->ignore($member->id_member, 'id_member'),
-                    ],
-                    'alamat'     => 'sometimes|nullable|string|max:255',
-                    'no_telp'    => 'sometimes|nullable|string|max:30',
-                    'url_foto_profil' => 'sometimes|image|mimes:jpg,jpeg,png,webp|max:2048',
-                ]
-            );
+            $validator = Validator::make($request->all(), [
+                'nama'       => 'sometimes|nullable|string',
+                'username'   => [
+                    'sometimes', 'nullable', 'string', 'max:50',
+                    Rule::unique('member','username')->ignore($member->id_member, 'id_member'),
+                ],
+                'email'      => [
+                    'sometimes', 'nullable', 'email', 'max:100',
+                    Rule::unique('member','email')->ignore($member->id_member, 'id_member'),
+                ],
+                'alamat'     => 'sometimes|nullable|string|max:255',
+                'no_telp'    => 'sometimes|nullable|string|max:30',
+                'url_foto_profil' => 'sometimes|image|mimes:jpg,jpeg,png,webp|max:2048',
+            ]);
 
             $validator->after(function ($v) use ($request) {
             if ($request->filled('username')) {
                     if (DB::table('petugas')->where('username', $request->username)->exists()) {
-                        $v->errors()->add('username', 'Username sudah digunakan.');
+                        $v->errors()->add('username', 'This username is already taken');
                     }
                 }
                 if ($request->filled('email')) {
                     if (DB::table('petugas')->where('email', $request->email)->exists()) {
-                        $v->errors()->add('email', 'Email sudah digunakan.');
+                        $v->errors()->add('email', 'This email address is already registered');
                     }
                 }
             });
@@ -171,15 +167,19 @@ class MemberController extends Controller
 
             $data = $validator->validated();
 
-            if($request->hasFile('url_foto_profil')){
+            // ⬅️⬅️⬅️ HAPUS "foto_profil" dari data validasi,
+            // supaya tidak tersimpan ke kolom url_foto_profil
+            unset($data['url_foto_profil']);
+
+            // ⬅️⬅️⬅️ Pindahkan file ke storage dan simpan pathnya
+            if ($request->hasFile('url_foto_profil')) {
                 $path = $request->file('url_foto_profil')->store('profile', 'public');
-                $data['url_foto_profil'] = $path;
+                $member->url_foto_profil = $path;
             }
 
-
-            $member->update($data);
-
-
+            // ⬅️⬅️⬅️ Update field biasa
+            $member->fill($data);
+            $member->save();
 
             return response()->json([
                 'status'  => true,
@@ -187,7 +187,7 @@ class MemberController extends Controller
                 'data'    => $member->fresh()
             ], 200);
 
-        }catch(Exception $e){
+        } catch (Exception $e) {
             return response()->json([
                 'status' => false,
                 'message' => $e->getMessage(),
@@ -195,6 +195,7 @@ class MemberController extends Controller
             ], 400);
         }
     }
+
 
     public function destroy()
     {

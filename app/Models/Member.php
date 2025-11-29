@@ -25,16 +25,20 @@ class Member extends Authenticatable
         'status'
     ];
 
-    public function getUrlFotoProfilAttribute($value)
+   public function getUrlFotoProfilAttribute($value)
     {
+        // kalau benar-benar kosong → pakai default
         if (!$value) {
             return url('images/default-profile.jpeg');
         }
 
+        // kalau path dari storage (hasil upload)
         if (str_starts_with($value, 'profile/')) {
             return url('storage/' . $value);
-         }
+        }
 
+        // kalau sudah disimpan sebagai path relatif di public (images/default-profile.jpeg)
+        return url($value);
     }
 
 

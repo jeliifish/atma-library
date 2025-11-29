@@ -27,15 +27,18 @@ class Petugas extends Authenticatable
 
     public function getUrlFotoProfilAttribute($value)
     {
-        // pas pertama kali store langsung ngembalin url defaultnyaa
+        // kalau benar-benar kosong → pakai default
         if (!$value) {
-            return url('images/default-profil.jpeg');
+            return url('images/default-profile.jpeg');
         }
 
-         // kalauu udah ada foto profilenya nanti dia bakal return url + path fotonya   
+        // kalau path dari storage (hasil upload)
         if (str_starts_with($value, 'profile/')) {
             return url('storage/' . $value);
         }
+
+        // kalau sudah disimpan sebagai path relatif di public (images/default-profile.jpeg)
+        return url($value);
     }
 
 

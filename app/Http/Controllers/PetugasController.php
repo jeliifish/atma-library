@@ -132,22 +132,18 @@ class PetugasController extends Controller
                     'alamat'     => 'sometimes|nullable|string|max:255',
                     'no_telp'    => 'sometimes|nullable|string|max:30',
                     'url_foto_profil' => 'sometimes|image|mimes:jpg,jpeg,png,webp|max:2048',
-                ],
-                [
-                    'email.unique'      => 'Email sudah digunakan.',
-                    'username.unique'   => 'Username sudah digunakan.',
                 ]
             );
 
             $validator->after(function ($v) use ($request) {
             if ($request->filled('username')) {
                     if (DB::table('member')->where('username', $request->username)->exists()) {
-                        $v->errors()->add('username', 'Username sudah digunakan.');
+                        $v->errors()->add('username', 'This username is already taken');
                     }
                 }
                 if ($request->filled('email')) {
                     if (DB::table('member')->where('email', $request->email)->exists()) {
-                        $v->errors()->add('email', 'Email sudah digunakan.');
+                        $v->errors()->add('email','This email address is already registered');
                     }
                 }
             });
@@ -160,16 +156,23 @@ class PetugasController extends Controller
                 ], 422);
             }
 
-            $data = $validator->validated();
             
-            if($request->hasFile('url_foto_profil')){
+            $data = $validator->validated();
+
+            // ⬅️⬅️⬅️ HAPUS "foto_profil" dari data validasi,
+            // supaya tidak tersimpan ke kolom url_foto_profil
+            unset($data['url_foto_profil']);
+
+            // ⬅️⬅️⬅️ Pindahkan file ke storage dan simpan pathnya
+            if ($request->hasFile('url_foto_profil')) {
                 $path = $request->file('url_foto_profil')->store('profile', 'public');
-                $data['url_foto_profil'] = $path;
+                $petugas->url_foto_profil = $path;
             }
 
-
-            $petugas->update($data);
-
+            // ⬅️⬅️⬅️ Update field biasa
+            $petugas->fill($data);
+            $petugas->save();
+            
             return response()->json([
                 'status'  => true,
                 'message' => 'Profil berhasil diperbarui',
