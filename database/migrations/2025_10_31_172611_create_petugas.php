@@ -19,6 +19,7 @@ return new class extends Migration
             $table->string('alamat');
             $table->string('email');
             $table->string('no_telp');
+            $table->date('tgl_daftar');
             $table->string('url_foto_profil')->nullable();;
             $table->enum('status', ['aktif', 'cuti']);
             $table->timestamps();

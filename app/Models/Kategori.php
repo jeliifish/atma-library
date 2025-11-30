@@ -13,8 +13,7 @@ class Kategori extends Model
     protected $keyType = 'string';
 
     protected $fillable = [
-        'nama_kategori',
-        'deskripsi'
+        'nama_kategori'
     ];
 
     protected static function boot()
