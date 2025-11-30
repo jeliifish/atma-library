@@ -160,7 +160,7 @@ class AuthController extends Controller
                 ], 400);
             }
             
-            $draft->update(['status' => 'menunggu']);
+            $draft->update(['status' => 'pending']);
            
             $member->peminjaman()->firstOrCreate(
                 [
@@ -190,108 +190,205 @@ class AuthController extends Controller
         }
     }   
 
-  public function returnBook(Request $request)
-  {
-    try{
-        $member = Auth::guard('member')->user();
-        if (!$member) {
-            return response()->json(['status' => false, 'message' => 'Member tidak ditemukan.'], 404);
-        }
-
-        $validated = $request->validate([
-            'id_buku_copy' => 'required|exists:copy_buku,id_buku_copy',
-        ]);
-
-        return DB::transaction(function () use ($member, $validated) {
-
-            // cari peminjaman yang udah disetui yang berisi id_buku_copy yang mau dikembaliin
-            $peminjaman = Peminjaman::where('id_member', $member->id_member)
-                ->where('status', 'disetujui')
-                ->whereHas('detailPeminjaman', function ($q) use ($validated) {
-                    $q->where('id_buku_copy', $validated['id_buku_copy'])
-                    ->where('status', '!=', 'returned');
-                })
-                ->orderByDesc('nomor_pinjam') 
-                ->first();
-
-
-            if (!$peminjaman) {
-                return response()->json([
-                    'status' => false,
-                    'message' => 'Buku tidak ditemukan pada peminjaman aktif atau sudah dikembalikan.'
-                ], 404);
+    public function returnBook(Request $request)
+    {
+        try{
+            $member = Auth::guard('member')->user();
+            if (!$member) {
+                return response()->json(['status' => false, 'message' => 'Member tidak ditemukan.'], 404);
             }
 
-            // cari detailPeminjaman yang mau dikembaliin dan langsung diupdate 
-            $updatedDetail = DetailPeminjaman::where('nomor_pinjam', $peminjaman->nomor_pinjam)
-                ->where('id_buku_copy', $validated['id_buku_copy'])
-                ->where('status', '!=', 'returned')
-                ->lockForUpdate()
-                ->update([
-                    'status'      => 'returned',
-                    'tgl_kembali' => now()->addDays(8),
-                ]); // mengembalikan jumlah baris yang diupdate
-
-            if ($updatedDetail === 0) {
-                return response()->json([
-                    'status' => false,
-                    'message' => 'Detail peminjaman tidak ditemukan atau sudah dikembalikan.'
-                ], 404);
-            }
-
-            // update status copy buku nya jadi tersedia
-            CopyBuku::where('id_buku_copy', $validated['id_buku_copy'])
-                ->lockForUpdate()
-                ->update(['status' => 'available']);
-
-            $due = Carbon::parse($peminjaman->tgl_kembali)->startOfDay();
-            $now = Carbon::now()->startOfDay();
-            $hariTelat = $due->diffInDays($now, false);
-            $hariTelat = max(0, $hariTelat);
-
-            if ($hariTelat > 0) {
-                
-                $hargaPerHari = 1000; // contoh Rp1000/hari
-                $totalDenda = $hariTelat * $hargaPerHari;
-
-                Denda::create([
-                    'nomor_pinjam'   => $peminjaman->nomor_pinjam,
-                    'id_buku_copy'   => $validated['id_buku_copy'],
-                    'hari_telat'     => $hariTelat,
-                    'harga_per_hari' => $hargaPerHari,
-                    'total_denda'    => $totalDenda,
-                    'status'         => 'belum'
-                ]);
-            }
-            // ngecek apakah smua buku di peminjaman ini udah dikembaliin semua atau belum
-            $isComplete = DetailPeminjaman::where('nomor_pinjam', $peminjaman->nomor_pinjam)
-                ->where('status', '!=', 'returned')
-                ->exists();
-
-            if (!$isComplete) {
-                $peminjaman->update(['status' => 'selesai']);
-            }
-
-            $peminjaman = Peminjaman::with([
-                    'detailPeminjaman.copyBuku',
-                    'member',
-                    'petugas'
-                ])->find($peminjaman->nomor_pinjam);
-
-            return response()->json([
-                'status'  => true,
-                'message' => 'Pengembalian buku berhasil.',
-                'peminjaman'  => $peminjaman,
+            $validated = $request->validate([
+                'id_buku_copy' => 'required|exists:copy_buku,id_buku_copy',
             ]);
-        });
 
-    }catch (\Exception $e) {
-        return response()->json([
-            'status' => false,
-            'message' => 'Terjadi kesalahan saat mengembalikan buku: ' . $e->getMessage(),
-        ], 500);
+            return DB::transaction(function () use ($member, $validated) {
+
+                // cari peminjaman yang udah disetui yang berisi id_buku_copy yang mau dikembaliin
+                $peminjaman = Peminjaman::where('id_member', $member->id_member)
+                    ->where('status', 'approved')
+                    ->whereHas('detailPeminjaman', function ($q) use ($validated) {
+                        $q->where('id_buku_copy', $validated['id_buku_copy'])
+                        ->where('status', '!=', 'returned');
+                    })
+                    ->orderByDesc('nomor_pinjam') 
+                    ->first();
+
+
+                if (!$peminjaman) {
+                    return response()->json([
+                        'status' => false,
+                        'message' => 'Buku tidak ditemukan pada peminjaman aktif atau sudah dikembalikan.'
+                    ], 404);
+                }
+
+                // cari detailPeminjaman yang mau dikembaliin dan langsung diupdate 
+                $updatedDetail = DetailPeminjaman::where('nomor_pinjam', $peminjaman->nomor_pinjam)
+                    ->where('id_buku_copy', $validated['id_buku_copy'])
+                    ->where('status', '!=', 'returned')
+                    ->lockForUpdate()
+                    ->update([
+                        'status'      => 'returned',
+                        'tgl_kembali' => now()->addDays(8),
+                    ]); // mengembalikan jumlah baris yang diupdate
+
+                if ($updatedDetail === 0) {
+                    return response()->json([
+                        'status' => false,
+                        'message' => 'Detail peminjaman tidak ditemukan atau sudah dikembalikan.'
+                    ], 404);
+                }
+
+                // update status copy buku nya jadi tersedia
+                CopyBuku::where('id_buku_copy', $validated['id_buku_copy'])
+                    ->lockForUpdate()
+                    ->update(['status' => 'available']);
+
+                $due = Carbon::parse($peminjaman->tgl_kembali)->startOfDay();
+                $now = Carbon::now()->startOfDay();
+                $hariTelat = $due->diffInDays($now, false);
+                $hariTelat = max(0, $hariTelat);
+
+                if ($hariTelat > 0) {
+                    
+                    $hargaPerHari = 1000; // contoh Rp1000/hari
+                    $totalDenda = $hariTelat * $hargaPerHari;
+
+                    Denda::create([
+                        'nomor_pinjam'   => $peminjaman->nomor_pinjam,
+                        'id_buku_copy'   => $validated['id_buku_copy'],
+                        'hari_telat'     => $hariTelat,
+                        'harga_per_hari' => $hargaPerHari,
+                        'total_denda'    => $totalDenda,
+                        'status'         => 'belum'
+                    ]);
+                }
+                // ngecek apakah smua buku di peminjaman ini udah dikembaliin semua atau belum
+                $isComplete = DetailPeminjaman::where('nomor_pinjam', $peminjaman->nomor_pinjam)
+                    ->where('status', '!=', 'returned')
+                    ->exists();
+
+                if (!$isComplete) {
+                    $peminjaman->update(['status' => 'completed']);
+                }
+
+                $peminjaman = Peminjaman::with([
+                        'detailPeminjaman.copyBuku',
+                        'member',
+                        'petugas'
+                    ])->find($peminjaman->nomor_pinjam);
+
+                return response()->json([
+                    'status'  => true,
+                    'message' => 'Pengembalian buku berhasil.',
+                    'peminjaman'  => $peminjaman,
+                ]);
+            });
+
+        }catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Terjadi kesalahan saat mengembalikan buku: ' . $e->getMessage(),
+            ], 500);
+        }
     }
-  }
+
+    public function returnAllBooks(Request $request)
+    {
+        try {
+            $member = Auth::guard('member')->user();
+
+            if (!$member) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Member tidak ditemukan.'
+                ], 404);
+            }
+
+            return DB::transaction(function () use ($member) {
+
+                // Ambil semua detail peminjaman yang masih borrowed
+                $details = DetailPeminjaman::whereHas('peminjaman', function ($q) use ($member) {
+                        $q->where('id_member', $member->id_member)
+                        ->where('status', 'approved');
+                    })
+                    ->where('status', 'borrowed')
+                    ->lockForUpdate()
+                    ->get();
+
+                if ($details->isEmpty()) {
+                    return response()->json([
+                        'status'  => false,
+                        'message' => 'Tidak ada buku yang masih dipinjam.'
+                    ], 404);
+                }
+
+                $updated = [];
+                foreach ($details as $detail) {
+
+                    // update detail → returned
+                    $detail->update([
+                        'status'      => 'returned',
+                        'tgl_kembali' => now(),
+                    ]);
+
+                    // ubah copy menjadi available
+                    CopyBuku::where('id_buku_copy', $detail->id_buku_copy)
+                        ->update(['status' => 'available']);
+
+                    // cek denda
+                    $due = Carbon::parse($detail->peminjaman->tgl_kembali)->startOfDay();
+                    $now = Carbon::now()->startOfDay();
+                    $hariTelat = max(0, $due->diffInDays($now, false));
+
+                    if ($hariTelat > 0) {
+                        $hargaPerHari = 1000;
+                        $totalDenda = $hariTelat * $hargaPerHari;
+
+                        Denda::create([
+                            'nomor_pinjam'   => $detail->nomor_pinjam,
+                            'id_buku_copy'   => $detail->id_buku_copy,
+                            'hari_telat'     => $hariTelat,
+                            'harga_per_hari' => $hargaPerHari,
+                            'total_denda'    => $totalDenda,
+                            'status'         => 'belum'
+                        ]);
+                    }
+
+                    // simpan data hasil update
+                    $updated[] = $detail->id_buku_copy;
+                }
+
+                // UPDATE STATUS PEMINJAMAN yg sudah selesai semua
+                $peminjamanIds = $details->pluck('nomor_pinjam')->unique();
+
+                foreach ($peminjamanIds as $nomor) {
+                    $masihDipinjam = DetailPeminjaman::where('nomor_pinjam', $nomor)
+                        ->where('status', '!=', 'returned')
+                        ->exists();
+
+                    if (!$masihDipinjam) {
+                        Peminjaman::where('nomor_pinjam', $nomor)->update([
+                            'status' => 'completed'
+                        ]);
+                    }
+                }
+
+                return response()->json([
+                    'status'  => true,
+                    'message' => 'All borrowed books have been returned successfully.',
+                    'returned_books' => $updated
+                ]);
+            });
+
+        } catch (\Throwable $e) {
+            return response()->json([
+                'status'  => false,
+                'message' => 'Gagal mengembalikan semua buku: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
 
      // untuk ambil detail peminjaman yg masih draft
     public function getDraft()
@@ -318,31 +415,54 @@ class AuthController extends Controller
     }
 
      // untuk ambil detail peminjaman yg masih draft
-    public function getPendingAndBorrowed()
+     public function getPendingAndBorrowed()
     {
-        $member = Auth::guard('member')->user();
+        try {
+            $member = Auth::guard('member')->user();
 
-        // Ambil SEMUA peminjaman dengan status pending & borrowed
-        $peminjaman = Peminjaman::with(['detailPeminjaman.copyBuku.buku'])
-            ->where('id_member', $member->id_member)
-            ->whereIn('status', ['pending', 'borrowed'])
-            ->orderBy('created_at', 'desc')
-            ->get();
+            if (!$member) {
+                return response()->json([
+                    'status'  => false,
+                    'message' => 'Member not authenticated',
+                ], 401);
+            }
 
-        // Jika kosong
-        if ($peminjaman->isEmpty()) {
+            $rows = DB::table('peminjaman as p')
+                ->join('detail_peminjaman as d', 'p.nomor_pinjam', '=', 'd.nomor_pinjam')
+                ->join('copy_buku as c', 'd.id_buku_copy', '=', 'c.id_buku_copy')
+                ->join('buku as b', 'c.id_buku', '=', 'b.id_buku')
+                ->where('p.id_member', $member->id_member)
+                // buang semua peminjaman yg masih draft (itu urusan page Cart)
+                ->where('p.status', '!=', 'draft')
+                // ✅ di On-going kita cuma mau detail yg statusnya masih aktif
+                ->whereIn('d.status', ['pending', 'borrowed'])
+                ->orderBy('p.nomor_pinjam', 'asc')
+                ->select([
+                    'p.nomor_pinjam',
+                    'p.tgl_pinjam',
+                    // status detail dipakai FE utk pill Pending/Borrowed
+                    'd.status as status_peminjaman',
+                    'd.id_buku_copy',
+                    'b.judul',
+                    'b.penulis',
+                    'b.url_foto_cover',
+                ])
+                ->get();
+
             return response()->json([
                 'status'  => true,
-                'message' => 'Tidak ada peminjaman pending atau borrowed.',
-                'data'    => [],
+                'message' => 'Pending & borrowed loan details loaded.',
+                'data'    => $rows,
             ]);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'status'  => false,
+                'message' => $e->getMessage(),
+            ], 500);
         }
-
-        return response()->json([
-            'status'  => true,
-            'message' => 'Data peminjaman ditemukan.',
-            'data'    => $peminjaman,
-        ]);
     }
+
+    
+
 
 }

@@ -35,6 +35,9 @@ Route::get('/copyBuku/{id_buku_copy}', [CopyBukuController::class, 'show']);
 // route public /api. .
 route::get('/peminjaman/showLatest', [PeminjamanController::class, 'showLatest']);
 
+route::get('/peminjaman/getPendingAndBorrowed', [AuthController::class, 'getPendingAndBorrowed']); //
+
+
 //route member /api/member/...
 Route::middleware(['auth:sanctum', MemberMiddleware::class])->prefix('member')->group(function () {
 
@@ -51,6 +54,7 @@ Route::middleware(['auth:sanctum', MemberMiddleware::class])->prefix('member')->
     Route::get('/cart', [AuthController::class, 'getDraft']);
 
     Route::put('/peminjaman/kembali', [AuthController::class, 'returnBook']);
+    Route::put('/peminjaman/kembaliSemua', [AuthController::class, 'returnAllBooks']);
 
     //route pembayaran
     Route::get('/denda', [PembayaranController::class, 'daftarDenda']); // daftar denda belum dibayar
