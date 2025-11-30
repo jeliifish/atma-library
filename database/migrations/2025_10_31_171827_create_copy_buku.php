@@ -15,7 +15,8 @@ return new class extends Migration
             $table->string('id_buku_copy',20)->primary();
             $table->string('id_buku');
             $table->string('rak');
-            $table->enum('status', ['dipinjam', 'tersedia']);
+            $table->enum('status', ['borrowed', 'available']);
+
             $table->timestamps();
 
             $table->foreign('id_buku')

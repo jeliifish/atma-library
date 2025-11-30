@@ -38,7 +38,7 @@ class CopyBukuController extends Controller
             ], 404);    
         }
 
-        $validated['status'] = 'tersedia';
+        $validated['status'] = 'available';
         
         $copyBuku = CopyBuku::create($validated);
          
@@ -92,7 +92,7 @@ class CopyBukuController extends Controller
 
             $validated = request()->validate([
                 'rak' => 'sometimes|string',
-                'status' => 'sometimes|in:dipinjam,tersedia',
+                'status' => 'sometimes|in:borrowed, available',
             ]);
 
             $copyBuku->update($validated);

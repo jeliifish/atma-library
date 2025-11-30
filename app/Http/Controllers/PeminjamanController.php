@@ -138,7 +138,7 @@ class PeminjamanController extends Controller
     {
         try{
             $request->validate([
-                'status' => 'required|in:disetujui,ditolak',
+                'status' => 'required|in:approved, rejected',
             ]);
 
             // pastikan yang login petugas
@@ -169,25 +169,25 @@ class PeminjamanController extends Controller
                 ]);
 
                 // kalau disetujui → set semua detail jadi disetujui dan ubah status copy-nya
-                if ($newStatus === 'disetujui') {
+                if ($newStatus === 'approved') {
                     foreach ($peminjaman->detailPeminjaman as $detail) {
-                        $detail->update(['status' => 'dipinjam']);
+                        $detail->update(['status' => 'borrowed']);
 
                         // ubah stok copy
                         $copy = CopyBuku::find($detail->id_buku_copy);
                         if ($copy) {
-                            $copy->update(['status' => 'dipinjam']);
+                            $copy->update(['status' => 'borrowed']);
                         }
                     }
                 }
 
                 // kalau ditolak → set semua detail jadi ditolak & copy buku dikembalikan tersedia
-                if ($newStatus === 'ditolak') {
+                if ($newStatus === 'rejected') {
                     foreach ($peminjaman->detailPeminjaman as $detail) {
-                        $detail->update(['status' => 'dikembalikan']);
+                        $detail->update(['status' => 'returned']);
                         $copy = CopyBuku::find($detail->id_buku_copy);
                         if ($copy) {
-                            $copy->update(['status' => 'tersedia']);
+                            $copy->update(['status' => 'available']);
                         }
                     }
                 }

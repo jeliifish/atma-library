@@ -95,7 +95,7 @@ class AuthController extends Controller
                 // cari copyan buku terakhir yang tersedia
               
                 $copy = CopyBuku::where('id_buku', $validated['id_buku'])
-                    ->where('status', 'tersedia')
+                    ->where('status', 'available')
                     ->orderBy('id_buku_copy', 'desc')
                     ->lockForUpdate()
                     ->first();
@@ -113,11 +113,11 @@ class AuthController extends Controller
                     'id_buku'      => $validated['id_buku'],
                     'id_buku_copy' => $copy->id_buku_copy,
                     'tgl_kembali'  => null,
-                    'status'       => 'menunggu',
+                    'status'       => 'pending',
                 ]);
 
                 // tandain copy buku yang lagi diajuin
-                $copy->update(['status' => 'dipinjam']);
+                $copy->update(['status' => 'borrowed']);
 
                 return response()->json([
                     'status' => true,
@@ -209,7 +209,7 @@ class AuthController extends Controller
                 ->where('status', 'disetujui')
                 ->whereHas('detailPeminjaman', function ($q) use ($validated) {
                     $q->where('id_buku_copy', $validated['id_buku_copy'])
-                    ->where('status', '!=', 'dikembalikan');
+                    ->where('status', '!=', 'returned');
                 })
                 ->orderByDesc('nomor_pinjam') 
                 ->first();
@@ -225,10 +225,10 @@ class AuthController extends Controller
             // cari detailPeminjaman yang mau dikembaliin dan langsung diupdate 
             $updatedDetail = DetailPeminjaman::where('nomor_pinjam', $peminjaman->nomor_pinjam)
                 ->where('id_buku_copy', $validated['id_buku_copy'])
-                ->where('status', '!=', 'dikembalikan')
+                ->where('status', '!=', 'returned')
                 ->lockForUpdate()
                 ->update([
-                    'status'      => 'dikembalikan',
+                    'status'      => 'returned',
                     'tgl_kembali' => now()->addDays(8),
                 ]); // mengembalikan jumlah baris yang diupdate
 
@@ -242,7 +242,7 @@ class AuthController extends Controller
             // update status copy buku nya jadi tersedia
             CopyBuku::where('id_buku_copy', $validated['id_buku_copy'])
                 ->lockForUpdate()
-                ->update(['status' => 'tersedia']);
+                ->update(['status' => 'available']);
 
             $due = Carbon::parse($peminjaman->tgl_kembali)->startOfDay();
             $now = Carbon::now()->startOfDay();
@@ -265,7 +265,7 @@ class AuthController extends Controller
             }
             // ngecek apakah smua buku di peminjaman ini udah dikembaliin semua atau belum
             $isComplete = DetailPeminjaman::where('nomor_pinjam', $peminjaman->nomor_pinjam)
-                ->where('status', '!=', 'dikembalikan')
+                ->where('status', '!=', 'returned')
                 ->exists();
 
             if (!$isComplete) {
@@ -293,8 +293,8 @@ class AuthController extends Controller
     }
   }
 
-  // untuk ambil detail peminjaman yg masih draft
- public function getDraft()
+     // untuk ambil detail peminjaman yg masih draft
+    public function getDraft()
     {
          $member = Auth::guard('member')->user();
 
@@ -316,4 +316,33 @@ class AuthController extends Controller
             'data'    => $draft,
         ]);
     }
+
+     // untuk ambil detail peminjaman yg masih draft
+    public function getPendingAndBorrowed()
+    {
+        $member = Auth::guard('member')->user();
+
+        // Ambil SEMUA peminjaman dengan status pending & borrowed
+        $peminjaman = Peminjaman::with(['detailPeminjaman.copyBuku.buku'])
+            ->where('id_member', $member->id_member)
+            ->whereIn('status', ['pending', 'borrowed'])
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        // Jika kosong
+        if ($peminjaman->isEmpty()) {
+            return response()->json([
+                'status'  => true,
+                'message' => 'Tidak ada peminjaman pending atau borrowed.',
+                'data'    => [],
+            ]);
+        }
+
+        return response()->json([
+            'status'  => true,
+            'message' => 'Data peminjaman ditemukan.',
+            'data'    => $peminjaman,
+        ]);
+    }
+
 }
