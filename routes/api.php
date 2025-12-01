@@ -79,6 +79,7 @@ Route::middleware(['auth:sanctum', PetugasMiddleware::class])->prefix('petugas')
     Route::put('/copyBuku/{id_buku_copy}', [CopyBukuController::class, 'update']);
     Route::delete('/copyBuku/{id_buku_copy}', [CopyBukuController::class, 'destroy']);
     Route::delete('/copyBuku/delete-latest', [CopyBukuController::class, 'destroyLatest']);
+    Route::get('/copyBuku/count/{id_buku}', [CopyBukuController::class, 'getCopyCount']);
 
     route::get('/peminjaman', [PeminjamanController::class, 'index']);
     route::get('/peminjaman/{nomor_pinjam}', [PeminjamanController::class, 'show']);
