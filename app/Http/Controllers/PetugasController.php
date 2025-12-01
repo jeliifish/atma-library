@@ -63,6 +63,8 @@ class PetugasController extends Controller
 
             $data = $validated;
 
+            
+            $data['tgl_daftar'] = now()->toDateString();
             $data['status'] = 'aktif';
             $data['url_foto_profil'] = 'images/default-profile.jpeg'; // path relatif dari public/
 
