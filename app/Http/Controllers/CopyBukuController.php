@@ -151,4 +151,45 @@ class CopyBukuController extends Controller
             ], 500);
         }
     }
+    
+    public function destroyLatest()
+    {
+        try {
+            // Ambil buku terbaru berdasarkan ID (auto increment)
+            $latest = Buku::orderBy('id_buku', 'desc')->first();
+
+            if (!$latest) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Tidak ada buku untuk dihapus.'
+                ], 404);
+            }
+
+            $latest->delete();
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Buku terbaru berhasil dihapus.',
+                'deleted_id' => $latest->id_buku
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Terjadi kesalahan: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function getCopyCount($id_buku)
+    {
+        $count = CopyBuku::where('id_buku', $id_buku)->count();
+
+        return response()->json([
+            'status' => true,
+            'data' => [
+                'copy_count' => $count
+            ]
+        ]);
+    }
 }
