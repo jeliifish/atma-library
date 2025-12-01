@@ -15,7 +15,6 @@ use Exception;
 class MemberController extends Controller
 {
     // LIST untuk halaman Member List (PETUGAS)
-    // GET /api/petugas/members
     public function index()
     {
         $members = Member::orderBy('id_member')->get();
@@ -82,11 +81,11 @@ class MemberController extends Controller
 
             $member->peminjaman()->firstOrCreate(
                 [
-                    'id_member' => $member->id_member,
+                    'id_member'  => $member->id_member,
                     'id_petugas' => null,
                     'tgl_pinjam' => now(),
-                    'tgl_kembali' => now()->addDays(7),
-                    'status' => 'draft'
+                    'tgl_kembali'=> now()->addDays(7),
+                    'status'     => 'draft'
                 ]
             );
 
@@ -245,6 +244,47 @@ class MemberController extends Controller
         return response()->json([
             'message' => 'Member berhasil dihapus',
         ]);
+    }
+
+    // UPDATE MEMBER BY ID (untuk PETUGAS, dipakai Member List)
+    public function updateById(Request $request, $id_member)
+    {
+        $member = Member::find($id_member);
+
+        if (!$member) {
+            return response()->json([
+                'status'  => false,
+                'message' => 'Member tidak ditemukan',
+                'data'    => []
+            ], 404);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'nama'         => 'sometimes|nullable|string|max:100',
+            'email'        => [
+                'sometimes', 'nullable', 'email', 'max:100',
+                Rule::unique('member', 'email')->ignore($member->id_member, 'id_member'),
+            ],
+            'nomor_member' => 'sometimes|nullable|string|max:50',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status'  => false,
+                'message' => 'Validasi gagal',
+                'errors'  => $validator->errors()
+            ], 422);
+        }
+
+        $data = $validator->validated();
+        $member->fill($data);
+        $member->save();
+
+        return response()->json([
+            'status'  => true,
+            'message' => 'Member berhasil diperbarui',
+            'data'    => $member->fresh(),
+        ], 200);
     }
 
     // GANTI PASSWORD MEMBER (yang login)

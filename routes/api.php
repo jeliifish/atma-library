@@ -91,9 +91,10 @@ Route::middleware(['auth:sanctum', PetugasMiddleware::class])->prefix('petugas')
 
     // MEMBER LIST API (dipakai halaman MemberList)
     Route::get('/members', [MemberController::class, 'index']);
+    Route::put('/members/{id_member}', [MemberController::class, 'updateById']);
     Route::delete('/members/{id_member}', [MemberController::class, 'destroyById']);
 
-    // REPORTS (summary + loans + fines) untuk petugas
+    // REPORTS untuk petugas
     Route::get('/reports/summary', [ReportController::class, 'summary']);
     Route::get('/reports/loans', [ReportController::class, 'loans']);
     Route::get('/reports/fines', [ReportController::class, 'fines']);
