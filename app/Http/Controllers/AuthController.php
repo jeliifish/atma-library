@@ -209,7 +209,7 @@ class AuthController extends Controller
                     ->where('status', 'approved')
                     ->whereHas('detailPeminjaman', function ($q) use ($validated) {
                         $q->where('id_buku_copy', $validated['id_buku_copy'])
-                        ->where('status', '!=', 'returned');
+                        ->where('status', 'borrowed');
                     })
                     ->orderByDesc('nomor_pinjam') 
                     ->first();
@@ -225,7 +225,7 @@ class AuthController extends Controller
                 // cari detailPeminjaman yang mau dikembaliin dan langsung diupdate 
                 $updatedDetail = DetailPeminjaman::where('nomor_pinjam', $peminjaman->nomor_pinjam)
                     ->where('id_buku_copy', $validated['id_buku_copy'])
-                    ->where('status', '!=', 'returned')
+                    ->where('status', 'borrowed')
                     ->lockForUpdate()
                     ->update([
                         'status'      => 'returned',
@@ -265,7 +265,7 @@ class AuthController extends Controller
                 }
                 // ngecek apakah smua buku di peminjaman ini udah dikembaliin semua atau belum
                 $isComplete = DetailPeminjaman::where('nomor_pinjam', $peminjaman->nomor_pinjam)
-                    ->where('status', '!=', 'returned')
+                    ->where('status', 'borrowed')
                     ->exists();
 
                 if (!$isComplete) {
@@ -293,7 +293,7 @@ class AuthController extends Controller
         }
     }
 
-    public function returnAllBooks(Request $request)
+   public function returnAllBooks(Request $request)
     {
         try {
             $member = Auth::guard('member')->user();
@@ -307,12 +307,12 @@ class AuthController extends Controller
 
             return DB::transaction(function () use ($member) {
 
-                // Ambil semua detail peminjaman yang masih borrowed
+                // Ambil semua DETAIL yg masih BORROWED saja
                 $details = DetailPeminjaman::whereHas('peminjaman', function ($q) use ($member) {
                         $q->where('id_member', $member->id_member)
-                        ->where('status', 'approved');
+                        ->where('status', 'approved');   // hanya peminjaman yg aktif
                     })
-                    ->where('status', 'borrowed')
+                    ->where('status', 'borrowed')          // ⬅️ hanya borrowed
                     ->lockForUpdate()
                     ->get();
 
@@ -324,6 +324,7 @@ class AuthController extends Controller
                 }
 
                 $updated = [];
+
                 foreach ($details as $detail) {
 
                     // update detail → returned
@@ -343,7 +344,7 @@ class AuthController extends Controller
 
                     if ($hariTelat > 0) {
                         $hargaPerHari = 1000;
-                        $totalDenda = $hariTelat * $hargaPerHari;
+                        $totalDenda   = $hariTelat * $hargaPerHari;
 
                         Denda::create([
                             'nomor_pinjam'   => $detail->nomor_pinjam,
@@ -351,33 +352,35 @@ class AuthController extends Controller
                             'hari_telat'     => $hariTelat,
                             'harga_per_hari' => $hargaPerHari,
                             'total_denda'    => $totalDenda,
-                            'status'         => 'belum'
+                            'status'         => 'belum',
                         ]);
                     }
 
-                    // simpan data hasil update
                     $updated[] = $detail->id_buku_copy;
                 }
 
-                // UPDATE STATUS PEMINJAMAN yg sudah selesai semua
+                // UPDATE STATUS PEMINJAMAN: hanya kalau TIDAK ADA lagi pending/borrowed
                 $peminjamanIds = $details->pluck('nomor_pinjam')->unique();
 
                 foreach ($peminjamanIds as $nomor) {
-                    $masihDipinjam = DetailPeminjaman::where('nomor_pinjam', $nomor)
-                        ->where('status', '!=', 'returned')
+
+                    // cek masih ada detail yg statusnya aktif (pending/borrowed) atau tidak
+                    $masihAktif = DetailPeminjaman::where('nomor_pinjam', $nomor)
+                        ->whereIn('status', ['pending', 'borrowed'])   // ⬅️ JELAS: yg kita anggap "masih jalan"
                         ->exists();
 
-                    if (!$masihDipinjam) {
+                    if (!$masihAktif) {
+                        // baru boleh completed kalau udah nggak ada pending & borrowed
                         Peminjaman::where('nomor_pinjam', $nomor)->update([
-                            'status' => 'completed'
+                            'status' => 'completed',
                         ]);
                     }
                 }
 
                 return response()->json([
-                    'status'  => true,
-                    'message' => 'All borrowed books have been returned successfully.',
-                    'returned_books' => $updated
+                    'status'         => true,
+                    'message'        => 'All borrowed books have been returned successfully.',
+                    'returned_books' => $updated,
                 ]);
             });
 
@@ -433,7 +436,7 @@ class AuthController extends Controller
                 ->join('buku as b', 'c.id_buku', '=', 'b.id_buku')
                 ->where('p.id_member', $member->id_member)
                 // buang semua peminjaman yg masih draft (itu urusan page Cart)
-                ->where('p.status', '!=', 'draft')
+                ->where('p.status', 'pending')
                 // ✅ di On-going kita cuma mau detail yg statusnya masih aktif
                 ->whereIn('d.status', ['pending', 'borrowed'])
                 ->orderBy('p.nomor_pinjam', 'asc')
@@ -462,7 +465,59 @@ class AuthController extends Controller
         }
     }
 
-    
+      // untuk ambil detail peminjaman yg masih draft
+    public function pendingRequests()
+    {
+        try {
+            // kalau mau dibatasi hanya untuk petugas yang login:
+            $petugas = Auth::guard('petugas')->user();
+
+            if (!$petugas) {
+                return response()->json([
+                    'status'  => false,
+                    'message' => 'petugas not authenticated',
+                ], 401);
+            }
+
+            $rows = DB::table('peminjaman as p')
+                ->join('detail_peminjaman as d', 'p.nomor_pinjam', '=', 'd.nomor_pinjam')
+                ->join('copy_buku as c', 'd.id_buku_copy', '=', 'c.id_buku_copy')
+                ->join('buku as b', 'c.id_buku', '=', 'b.id_buku')
+                ->join('member as m', 'p.id_member', '=', 'm.id_member')
+                // >> hanya peminjaman yang BELUM completed/selesai
+                ->whereNotIn('p.status', ['completed', 'draft'])
+                // >> hanya detail yang masih pending (belum approved / borrowed)
+                ->where('d.status', 'pending')
+                ->orderBy('p.nomor_pinjam', 'asc')
+                ->select([
+                    'p.nomor_pinjam',
+                    'p.tgl_pinjam',
+                    'p.status as status_peminjaman',
+
+                    'd.id_buku_copy',
+                    'd.status as status_detail',
+
+                    'b.judul',
+                    'b.penulis',
+                    'b.url_foto_cover',
+
+                    'm.id_member',
+                    'm.nama as member_name',
+                ])
+                ->get();
+
+            return response()->json([
+                'status'  => true,
+                'message' => 'Pending borrow requests loaded.',
+                'data'    => $rows,
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'status'  => false,
+                'message' => 'Failed to load pending borrow requests: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
 
 
 }

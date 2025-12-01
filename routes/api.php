@@ -82,6 +82,8 @@ Route::middleware(['auth:sanctum', PetugasMiddleware::class])->prefix('petugas')
     route::get('/peminjaman', [PeminjamanController::class, 'index']);
     route::get('/peminjaman/{nomor_pinjam}', [PeminjamanController::class, 'show']);
     Route::put('/peminjaman/{nomor_pinjam}/update', [PeminjamanController::class, 'updateStatus']);
+
+    route::get('/pendingRequests', [AuthController::class, 'pendingRequests']);
     
 
 });
