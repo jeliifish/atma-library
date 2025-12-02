@@ -81,11 +81,11 @@ class MemberController extends Controller
 
             $member->peminjaman()->firstOrCreate(
                 [
-                    'id_member'  => $member->id_member,
-                    'id_petugas' => null,
-                    'tgl_pinjam' => now(),
-                    'tgl_kembali'=> now()->addDays(7),
-                    'status'     => 'draft'
+                    'id_member'   => $member->id_member,
+                    'id_petugas'  => null,
+                    'tgl_pinjam'  => now(),
+                    'tgl_kembali' => now()->addDays(7),
+                    'status'      => 'draft'
                 ]
             );
 
@@ -227,8 +227,7 @@ class MemberController extends Controller
         }
     }
 
-    // HAPUS MEMBER BY ID (untuk PETUGAS, dipakai Member List)
-    // route: DELETE /api/petugas/members/{id_member}
+    // HAPUS MEMBER BY ID (untuk PETUGAS)
     public function destroyById($id_member)
     {
         $member = Member::find($id_member);
@@ -246,7 +245,7 @@ class MemberController extends Controller
         ]);
     }
 
-    // UPDATE MEMBER BY ID (untuk PETUGAS, dipakai Member List)
+    // UPDATE MEMBER BY ID (untuk PETUGAS)
     public function updateById(Request $request, $id_member)
     {
         $member = Member::find($id_member);
@@ -266,6 +265,8 @@ class MemberController extends Controller
                 Rule::unique('member', 'email')->ignore($member->id_member, 'id_member'),
             ],
             'nomor_member' => 'sometimes|nullable|string|max:50',
+            'no_telp'      => 'sometimes|nullable|string|max:30',
+            'alamat'       => 'sometimes|nullable|string|max:255',
         ]);
 
         if ($validator->fails()) {
@@ -287,6 +288,36 @@ class MemberController extends Controller
         ], 200);
     }
 
+    // TOGGLE STATUS MEMBER BY ID (untuk PETUGAS)
+    public function toggleStatus($id_member)
+    {
+        try {
+            $member = Member::find($id_member);
+
+            if (!$member) {
+                return response()->json([
+                    'status'  => false,
+                    'message' => 'Member tidak ditemukan',
+                ], 404);
+            }
+
+            // pastikan kolom 'status' ada di tabel member
+            $member->status = $member->status === 'aktif' ? 'nonaktif' : 'aktif';
+            $member->save();
+
+            return response()->json([
+                'status'  => true,
+                'message' => 'Status member berhasil diubah',
+                'data'    => $member,
+            ], 200);
+        } catch (Exception $e) {
+            return response()->json([
+                'status'  => false,
+                'message' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
     // GANTI PASSWORD MEMBER (yang login)
     public function changePassword(Request $request)
     {
@@ -301,7 +332,7 @@ class MemberController extends Controller
                 'new_password.confirmed' => 'Konfirmasi password tidak sesuai.',
                 'new_password.min'       => 'Password baru harus memiliki minimal 8 karakter.',
                 'current_password.required' => 'Password lama harus diisi.',
-                'new_password.required' => 'Password baru harus diisi.',
+                'new_password.required'  => 'Password baru harus diisi.',
             ]
         );
 
