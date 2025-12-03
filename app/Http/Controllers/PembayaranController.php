@@ -12,24 +12,73 @@ use App\Models\DetailPembayaranDenda;
 
 class PembayaranController extends Controller
 {
-    //daftar denda yang belum dibayar
-    public function daftarDenda()
+   public function listUnpaid(Request $request)
     {
         $member = Auth::guard('member')->user();
 
-        $denda = Denda::where('status', 'belum')
-                    ->whereHas('peminjaman', function($q) use ($member){
-                        $q->where('id_member', $member->id_member);
-                    })
-                    ->with('copyBuku', 'peminjaman')
-                    ->get();
+        $denda = Denda::with([
+                'peminjaman' => function ($q) {
+                    $q->select(
+                        'nomor_pinjam',
+                        'id_member',
+                        'tgl_pinjam',
+                        'tgl_kembali'      // jatuh tempo
+                    );
+                },
+                'detailPeminjaman' => function ($q) {
+                    $q->select(
+                        'id_detail',
+                        'nomor_pinjam',
+                        'id_buku_copy',
+                        'tgl_kembali' // tanggal kembali sebenarnya
+                    );
+                },
+                'copyBuku.buku' => function ($q) {
+                    $q->select(
+                        'id_buku',
+                        'judul',
+                        'penulis',
+                        'url_foto_cover'
+                    );
+                },
+            ])
+            ->whereIn('status', 'unpaid')
+            ->whereHas('peminjaman', function ($q) use ($member) {
+                $q->where('id_member', $member->id_member);
+            })
+            ->orderBy('created_at', 'asc')
+            ->get();
+
+        $data = $denda->map(function ($item) {
+            return [
+                'id_denda'         => $item->id_denda,
+                'nomor_pinjam'     => $item->nomor_pinjam,
+                'id_buku_copy'     => $item->id_buku_copy,
+                'total_denda'      => $item->total_denda,
+                'status_denda'     => $item->status,
+
+                // dari peminjaman
+                'tgl_pinjam'       => optional($item->peminjaman)->tgl_pinjam,
+                'tgl_jatuh_tempo'  => optional($item->peminjaman)->tgl_kembali,
+
+                // dari detail peminjaman (per copy)
+                'tgl_dikembalikan' => optional($item->detailPeminjaman)->tgl_kembali,
+
+                // info buku
+                'judul'            => optional(optional($item->copyBuku)->buku)->judul,
+                'penulis'          => optional(optional($item->copyBuku)->buku)->penulis,
+                'url_foto_cover'   => optional(optional($item->copyBuku)->buku)->url_foto_cover,
+            ];
+        });
 
         return response()->json([
-            'status' => true,
+            'status'  => true,
             'message' => 'Daftar denda yang belum dibayar',
-            'data' => $denda
+            'data'    => $data,
         ]);
     }
+
+
 
     public function bayarDenda(Request $request)
     {
