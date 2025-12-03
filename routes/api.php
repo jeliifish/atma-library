@@ -5,40 +5,42 @@ use Illuminate\Support\Facades\Route;
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BukuController;
-
-use App\Http\Middleware\MemberMiddleware;
 use App\Http\Controllers\MemberController;
+use App\Http\Middleware\MemberMiddleware;
 use App\Http\Middleware\PetugasMiddleware;
 use App\Http\Controllers\PetugasController;
 use App\Http\Controllers\CopyBukuController;
 use App\Http\Controllers\KategoriController;
 use App\Http\Controllers\PembayaranController;
 use App\Http\Controllers\PeminjamanController;
-
+use App\Http\Controllers\ReportController;
 
 Route::post('/register/member', [MemberController::class, 'store']);
 Route::post('/register/petugas', [PetugasController::class, 'store']);
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
 
-// route public /api. .
+// route public /api...
 Route::get('/buku', [BukuController::class, 'index']);
 Route::get('/buku/search', [BukuController::class, 'search']);
 Route::get('/books/random', [BukuController::class, 'randomBooks']);
 Route::get('/buku/{id_buku}', [BukuController::class, 'show']);
 Route::post('/buku/byKategori', [BukuController::class, 'showBukuByKategori']);
 
-// route public /api. .
 Route::get('/copyBuku', [CopyBukuController::class, 'index']);
 Route::get('/copyBuku/{id_buku_copy}', [CopyBukuController::class, 'show']);
 
-// route public /api. .
-route::get('/peminjaman/showLatest', [PeminjamanController::class, 'showLatest']);
+Route::get('/peminjaman/showLatest', [PeminjamanController::class, 'showLatest']);
+Route::get('/peminjaman/getPendingAndBorrowed', [AuthController::class, 'getPendingAndBorrowed']);
 
-route::get('/peminjaman/getPendingAndBorrowed', [AuthController::class, 'getPendingAndBorrowed']); //
+// route kategori
+Route::get('/kategori', [KategoriController::class, 'index']);
+Route::post('/kategori', [KategoriController::class, 'store']);
+Route::get('/kategori/{id_kategori}', [KategoriController::class, 'show']);
+Route::put('/kategori/{id_kategori}', [KategoriController::class, 'update']);
+Route::delete('/kategori/{id_kategori}', [KategoriController::class, 'destroy']);
 
-
-//route member /api/member/...
+// route member & peminjaman untuk MEMBER yang login /api/member/...
 Route::middleware(['auth:sanctum', MemberMiddleware::class])->prefix('member')->group(function () {
 
     Route::get('/profile', [MemberController::class, 'show']);
@@ -50,7 +52,7 @@ Route::middleware(['auth:sanctum', MemberMiddleware::class])->prefix('member')->
     Route::post('/peminjaman', [PeminjamanController::class, 'store']);
     Route::post('/detailPeminjaman', [AuthController::class, 'addToDraft']);
     Route::post('/detailPeminjaman/submit', [AuthController::class, 'submitDraft']);
-    
+
     Route::get('/cart', [AuthController::class, 'getDraft']);
 
     Route::put('/peminjaman/kembali', [AuthController::class, 'returnBook']);
@@ -62,11 +64,14 @@ Route::middleware(['auth:sanctum', MemberMiddleware::class])->prefix('member')->
 
     route::get('/peminjaman/riwayat', [AuthController::class, 'getBorrowedHistory']); //
 
+    Route::get('/denda', [PembayaranController::class, 'daftarDenda']);
+    Route::post('/denda/bayar', [PembayaranController::class, 'bayarDenda']);
+    Route::get('/denda/riwayat', [PembayaranController::class, 'riwayatPembayaran']);
 });
 
-//route petugas /api/petugas/...
+// route untuk PETUGAS /api/petugas/...
 Route::middleware(['auth:sanctum', PetugasMiddleware::class])->prefix('petugas')->group(function () {
- 
+
     Route::get('/profile', [PetugasController::class, 'show']);
     Route::post('/profile/update', [PetugasController::class, 'update']);
     Route::delete('/profile/delete', [PetugasController::class, 'destroy']);
@@ -80,25 +85,24 @@ Route::middleware(['auth:sanctum', PetugasMiddleware::class])->prefix('petugas')
     Route::post('/copyBuku', [CopyBukuController::class, 'store']);
     Route::put('/copyBuku/{id_buku_copy}', [CopyBukuController::class, 'update']);
     Route::delete('/copyBuku/{id_buku_copy}', [CopyBukuController::class, 'destroy']);
+    Route::delete('/copyBuku/delete-latest', [CopyBukuController::class, 'destroyLatest']);
+    Route::get('/copyBuku/count/{id_buku}', [CopyBukuController::class, 'getCopyCount']);
 
-    route::get('/peminjaman', [PeminjamanController::class, 'index']);
-    route::get('/peminjaman/{nomor_pinjam}', [PeminjamanController::class, 'show']);
+    Route::get('/peminjaman', [PeminjamanController::class, 'index']);
+    Route::get('/peminjaman/{nomor_pinjam}', [PeminjamanController::class, 'show']);
     Route::put('/peminjaman/{nomor_pinjam}/update', [PeminjamanController::class, 'updateStatus']);
 
-    route::get('/pendingRequests', [AuthController::class, 'pendingRequests']);
-    
+    Route::get('/pendingRequests', [AuthController::class, 'pendingRequests']);
 
+    // MEMBER LIST API (dipakai halaman MemberList)
+    Route::get('/members', [MemberController::class, 'index']);
+    Route::put('/members/{id_member}', [MemberController::class, 'updateById']);
+    Route::delete('/members/{id_member}', [MemberController::class, 'destroyById']);
+
+    // REPORTS untuk petugas
+    Route::get('/reports/summary', [ReportController::class, 'summary']);
+    Route::get('/reports/loans', [ReportController::class, 'loans']);
+    Route::get('/reports/fines', [ReportController::class, 'fines']);
+
+    Route::put('/members/{id_member}/toggle-status', [MemberController::class, 'toggleStatus']);
 });
-
-// route kategori
-Route::get('/kategori', [KategoriController::class, 'index']);
-Route::post('/kategori', [KategoriController::class, 'store']);
-Route::get('/kategori/{id_kategori}', [KategoriController::class, 'show']);
-Route::put('/kategori/{id_kategori}', [KategoriController::class, 'update']);
-Route::delete('/kategori/{id_kategori}', [KategoriController::class, 'destroy']);
-
-
-
-// Route::get('/user', function (Request $request) {
-//     return $request->user();
-// })->middleware('auth:sanctum');
