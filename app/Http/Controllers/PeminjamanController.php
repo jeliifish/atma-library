@@ -282,4 +282,104 @@ class PeminjamanController extends Controller
         ]);
     }
 
+    public function updateStatusBulk(Request $request)
+    {
+        try {
+            $request->validate([
+                'status' => 'required|in:approved,rejected',
+                'nomor_pinjam' => 'required|array',
+                'nomor_pinjam.*' => 'integer',
+            ]);
+
+            $petugas = Auth::guard('petugas')->user();
+            if (!$petugas) {
+                return response()->json([
+                    'status'  => false,
+                    'message' => 'Akses ditolak. Hanya petugas yang dapat mengubah status peminjaman.'
+                ], 403);
+            }
+
+            return DB::transaction(function () use ($request, $petugas) {
+                $newStatus = $request->status;
+                $nomorPinjamList = $request->nomor_pinjam;
+
+                $peminjamanList = Peminjaman::with('detailPeminjaman')
+                    ->whereIn('nomor_pinjam', $nomorPinjamList)
+                    ->lockForUpdate()
+                    ->get()
+                    ->keyBy('nomor_pinjam');
+
+                $notFound = array_values(array_diff($nomorPinjamList, $peminjamanList->keys()->all()));
+                if (!empty($notFound)) {
+                    return response()->json([
+                        'status'  => false,
+                        'message' => 'Peminjaman tidak ditemukan.',
+                        'data'    => ['not_found' => $notFound],
+                    ], 404);
+                }
+
+                $updated = [];
+
+                foreach ($peminjamanList as $nomorPinjam => $peminjaman) {
+                    $peminjaman->update([
+                        'status'     => $newStatus,
+                        'id_petugas' => $petugas->id_petugas,
+                    ]);
+
+                    $details = DetailPeminjaman::where('nomor_pinjam', $nomorPinjam)
+                        ->where('status', 'pending')
+                        ->lockForUpdate()
+                        ->get();
+
+                    \Log::info('BULK APPROVE/REJECT PEMINJAMAN', [
+                        'nomor_pinjam_header' => $nomorPinjam,
+                        'detail_yang_keupdate' => $details->map(function ($d) {
+                            return [
+                                'nomor_pinjam' => $d->nomor_pinjam,
+                                'id_buku_copy' => $d->id_buku_copy,
+                                'status'       => $d->status,
+                            ];
+                        })->toArray()
+                    ]);
+
+                    if ($newStatus === 'approved') {
+                        foreach ($details as $detail) {
+                            DetailPeminjaman::where('nomor_pinjam', $detail->nomor_pinjam)
+                                ->where('id_buku_copy', $detail->id_buku_copy)
+                                ->update(['status' => 'borrowed']);
+
+                            CopyBuku::where('id_buku_copy', $detail->id_buku_copy)
+                                ->update(['status' => 'borrowed']);
+                        }
+                    }
+
+                    if ($newStatus === 'rejected') {
+                        foreach ($details as $detail) {
+                            DetailPeminjaman::where('nomor_pinjam', $detail->nomor_pinjam)
+                                ->where('id_buku_copy', $detail->id_buku_copy)
+                                ->update(['status' => 'rejected']);
+
+                            CopyBuku::where('id_buku_copy', $detail->id_buku_copy)
+                                ->update(['status' => 'available']);
+                        }
+                    }
+
+                    $updated[] = $peminjaman->fresh('detailPeminjaman');
+                }
+
+                return response()->json([
+                    'status'  => true,
+                    'message' => 'Status peminjaman berhasil diperbarui.',
+                    'data'    => $updated,
+                ]);
+            });
+        } catch (\Throwable $e) {
+            return response()->json([
+                'status'  => false,
+                'message' => 'Gagal memperbarui status peminjaman: ' . $e->getMessage(),
+                'data'    => []
+            ], 500);
+        }
+    }
+
 }

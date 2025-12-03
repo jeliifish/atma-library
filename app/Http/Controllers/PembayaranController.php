@@ -12,71 +12,137 @@ use App\Models\DetailPembayaranDenda;
 
 class PembayaranController extends Controller
 {
-   public function listUnpaid(Request $request)
+     public function showUnpaidFineDetails()
     {
         $member = Auth::guard('member')->user();
 
-        $denda = Denda::with([
-                'peminjaman' => function ($q) {
-                    $q->select(
-                        'nomor_pinjam',
-                        'id_member',
-                        'tgl_pinjam',
-                        'tgl_kembali'      // jatuh tempo
-                    );
-                },
-                'detailPeminjaman' => function ($q) {
-                    $q->select(
-                        'id_detail',
-                        'nomor_pinjam',
-                        'id_buku_copy',
-                        'tgl_kembali' // tanggal kembali sebenarnya
-                    );
-                },
-                'copyBuku.buku' => function ($q) {
-                    $q->select(
-                        'id_buku',
-                        'judul',
-                        'penulis',
-                        'url_foto_cover'
-                    );
-                },
-            ])
-            ->whereIn('status', 'unpaid')
+        if (!$member) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Member tidak terautentikasi.'
+            ], 401);
+        }
+
+        // Ambil semua denda yang statusnya 'unpaid' milik member ini
+        $unpaidFines = Denda::where('status', 'unpaid')
+            ->whereHas('peminjaman', function($q) use ($member) {
+                $q->where('id_member', $member->id_member);
+            })
+            // Tambahkan relasi untuk mendapatkan detail buku (CopyBuku -> Buku) dan Peminjaman
+            ->with(['copyBuku.buku', 'peminjaman.detailPeminjaman']) 
+            ->get();
+
+        // Hitung total keseluruhan denda
+        $totalUnpaidFine = $unpaidFines->sum('total_denda');
+
+        $groupedFines = $unpaidFines->groupBy('nomor_pinjam')->map(function ($items, $nomor_pinjam) {
+        $tgl_jatuh_tempo = $items->first()->peminjaman->tgl_kembali ?? null;
+
+        return [
+            'nomor_pinjam' => $nomor_pinjam,
+            'tgl_jatuh_tempo' => $tgl_jatuh_tempo,
+            'total_denda_pinjaman' => $items->sum('total_denda'),
+            'books' => $items->map(function ($denda) {
+                $detail = $denda->peminjaman
+                    ? $denda->peminjaman->detailPeminjaman->firstWhere('id_buku_copy', $denda->id_buku_copy)
+                    : null;
+
+                return [
+                    'id_denda' => $denda->id_denda,
+                    'tgl_pinjam' => $denda->peminjaman->tgl_pinjam ?? null,
+                    'tgl_kembali' => $detail->tgl_kembali ?? null,
+                    'judul' => $denda->copyBuku->buku->judul ?? 'N/A',
+                    'url_foto_cover' => $denda->copyBuku->buku->url_foto_cover ?? null,
+                    'penulis' => $denda->copyBuku->buku->penulis ?? 'N/A',
+                    'id_buku_copy' => $denda->id_buku_copy,
+                    'hari_telat' => $denda->hari_telat,
+                    'denda_per_buku' => $denda->total_denda,
+                    'status' => $denda->status,
+                ];
+            }),
+        ];
+    })->values();
+
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Detail denda yang belum dibayar berhasil dimuat.',
+            'total_denda_keseluruhan' => $totalUnpaidFine,
+            'data' => $groupedFines
+        ]);
+    }
+
+    public function showPaidFineDetails()
+    {
+        $member = Auth::guard('member')->user();
+
+        if (!$member) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Member tidak terautentikasi.'
+            ], 401);
+        }
+
+        // Ambil semua denda yang sudah dibayar milik member ini beserta relasi yang dibutuhkan
+        $paidFines = Denda::where('status', 'paid')
             ->whereHas('peminjaman', function ($q) use ($member) {
                 $q->where('id_member', $member->id_member);
             })
-            ->orderBy('created_at', 'asc')
+            ->with([
+                'copyBuku.buku',
+                'peminjaman.detailPeminjaman',
+                'pembayaranDenda',
+            ])
             ->get();
 
-        $data = $denda->map(function ($item) {
+        // Hitung total keseluruhan denda yang sudah dibayar
+        $totalPaidFine = $paidFines->sum('total_denda');
+
+        // Kelompokkan per nomor pinjam
+        $groupedFines = $paidFines->groupBy('nomor_pinjam')->map(function ($items, $nomor_pinjam) {
+            $tgl_jatuh_tempo = $items->first()->peminjaman->tgl_kembali ?? null;
+
             return [
-                'id_denda'         => $item->id_denda,
-                'nomor_pinjam'     => $item->nomor_pinjam,
-                'id_buku_copy'     => $item->id_buku_copy,
-                'total_denda'      => $item->total_denda,
-                'status_denda'     => $item->status,
+                'nomor_pinjam' => $nomor_pinjam,
+                'tgl_jatuh_tempo' => $tgl_jatuh_tempo,
+                'total_denda_pinjaman' => $items->sum('total_denda'),
+                'books' => $items->map(function ($denda) {
+                    $detail = $denda->peminjaman
+                        ? $denda->peminjaman->detailPeminjaman->firstWhere('id_buku_copy', $denda->id_buku_copy)
+                        : null;
 
-                // dari peminjaman
-                'tgl_pinjam'       => optional($item->peminjaman)->tgl_pinjam,
-                'tgl_jatuh_tempo'  => optional($item->peminjaman)->tgl_kembali,
+                    // Ambil pembayaran terbaru jika ada
+                    $payment = $denda->pembayaranDenda
+                        ? $denda->pembayaranDenda->sortByDesc('tgl_bayar')->first()
+                        : null;
 
-                // dari detail peminjaman (per copy)
-                'tgl_dikembalikan' => optional($item->detailPeminjaman)->tgl_kembali,
-
-                // info buku
-                'judul'            => optional(optional($item->copyBuku)->buku)->judul,
-                'penulis'          => optional(optional($item->copyBuku)->buku)->penulis,
-                'url_foto_cover'   => optional(optional($item->copyBuku)->buku)->url_foto_cover,
+                    return [
+                        'id_denda' => $denda->id_denda,
+                        'tgl_pinjam' => $denda->peminjaman->tgl_pinjam ?? null,
+                        'tgl_kembali' => $detail->tgl_kembali ?? null,
+                        'judul' => $denda->copyBuku->buku->judul ?? 'N/A',
+                        'url_foto_cover' => $denda->copyBuku->buku->url_foto_cover ?? null,
+                        'penulis' => $denda->copyBuku->buku->penulis ?? 'N/A',
+                        'id_buku_copy' => $denda->id_buku_copy,
+                        'hari_telat' => $denda->hari_telat,
+                        'denda_per_buku' => $denda->total_denda,
+                        'status' => $denda->status,
+                        'metode' => $payment->metode ?? null,
+                        'tgl_bayar' => $payment->tgl_bayar ?? null,
+                    ];
+                }),
             ];
-        });
+        })->values();
 
         return response()->json([
-            'status'  => true,
-            'message' => 'Daftar denda yang belum dibayar',
-            'data'    => $data,
+            'status' => true,
+            'message' => 'Detail denda yang sudah dibayar berhasil dimuat.',
+            'total_denda_keseluruhan' => $totalPaidFine,
+            'data' => $groupedFines
         ]);
     }
+
+
 
 
 
@@ -92,7 +158,7 @@ class PembayaranController extends Controller
         return DB::transaction(function () use ($request, $member) {
             // ambil denda yang dipilih dan belum dibayar
             $dendaList = Denda::whereIn('id_denda', $request->id_denda)
-                        ->where('status', 'belum')
+                        ->where('status', 'unpaid')
                         ->whereHas('peminjaman', function($q) use ($member){
                             $q->where('id_member', $member->id_member);
                         })
@@ -126,7 +192,7 @@ class PembayaranController extends Controller
                 ]);
 
                 // update status denda jadi lunas
-                $denda->update(['status' => 'lunas']);
+                $denda->update(['status' => 'paid']);
             }
 
             $pembayaran = $pembayaran->fresh('detailPembayaran.denda');

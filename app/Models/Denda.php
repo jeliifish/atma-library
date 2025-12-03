@@ -33,7 +33,7 @@ class Denda extends Model
     {
         return $this->belongsToMany(
             PembayaranDenda::class,
-            'detail_pembayaran_denda',
+            'detail_pembayaran',
             'id_denda',
             'id_pembayaran'
         )->withPivot('nominal_bayar')
