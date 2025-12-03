@@ -18,7 +18,7 @@ return new class extends Migration
             $table->integer('hari_telat');
             $table->decimal('harga_per_hari', 12, 0);
             $table->decimal('total_denda',  12, 0);
-            $table->enum('status', ['belum', 'lunas'])->default('belum');
+            $table->enum('status', ['unpaid', 'paid'])->default('unpaid');
             $table->timestamps();
 
             $table->foreign('nomor_pinjam')

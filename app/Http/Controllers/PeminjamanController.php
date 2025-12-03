@@ -136,80 +136,98 @@ class PeminjamanController extends Controller
     }
 
 
-    public function updateStatus(Request $request, $nomor_pinjam)
+     public function updateStatus(Request $request, $nomor_pinjam)
     {
-        try{
+        try {
             $request->validate([
-                'status' => 'required|in:approved, rejected',
+                'status' => 'required|in:approved,rejected',
             ]);
 
             // pastikan yang login petugas
             $petugas = Auth::guard('petugas')->user();
             if (!$petugas) {
                 return response()->json([
-                    'status' => false,
+                    'status'  => false,
                     'message' => 'Akses ditolak. Hanya petugas yang dapat mengubah status peminjaman.'
                 ], 403);
             }
 
+            return DB::transaction(function () use ($request, $petugas, $nomor_pinjam) {
 
-            $peminjaman = Peminjaman::with('detailPeminjaman')->find($nomor_pinjam);
-            if (!$peminjaman) {
-                return response()->json([
-                    'status' => false,
-                    'message' => 'Peminjaman tidak ditemukan.'
-                ], 404);
-            }
+                // HEADER: cuma satu peminjaman yg dikunci
+                $peminjaman = Peminjaman::with('detailPeminjaman')
+                    ->lockForUpdate()
+                    ->find($nomor_pinjam);
 
-            DB::transaction(function () use ($request, $peminjaman, $petugas) {
+                if (!$peminjaman) {
+                    return response()->json([
+                        'status'  => false,
+                        'message' => 'Peminjaman tidak ditemukan.'
+                    ], 404);
+                }
+
                 $newStatus = $request->status;
 
                 // update header
                 $peminjaman->update([
-                    'status' => $newStatus,
+                    'status'     => $newStatus,
                     'id_petugas' => $petugas->id_petugas,
                 ]);
 
-                // kalau disetujui → set semua detail jadi disetujui dan ubah status copy-nya
+                // DETAIL: HANYA milik nomor_pinjam INI & yg statusnya pending
+                $details = DetailPeminjaman::where('nomor_pinjam', $nomor_pinjam)
+                    ->where('status', 'pending')
+                    ->lockForUpdate()
+                    ->get();
+
+                    \Log::info('APPROVE PEMINJAMAN', [
+                        'nomor_pinjam_header' => $nomor_pinjam,
+                        'detail_yang_keupdate' => $details->map(function ($d) {
+                            return [
+                                'nomor_pinjam' => $d->nomor_pinjam,
+                                'id_buku_copy' => $d->id_buku_copy,
+                                'status'       => $d->status,
+                            ];
+                        })->toArray()
+                    ]);
+
                 if ($newStatus === 'approved') {
-                    foreach ($peminjaman->detailPeminjaman as $detail) {
-                        $detail->update(['status' => 'borrowed']);
+                    foreach ($details as $detail) {
+                        // status detail dari pending -> borrowed
+                        DetailPeminjaman::where('nomor_pinjam', $detail->nomor_pinjam)
+                            ->where('id_buku_copy', $detail->id_buku_copy)
+                            ->update(['status' => 'borrowed']);
 
-                        // ubah stok copy
-                        $copy = CopyBuku::find($detail->id_buku_copy);
-                        if ($copy) {
-                            $copy->update(['status' => 'borrowed']);
-                        }
+                        // copy buku jadi borrowed
+                        CopyBuku::where('id_buku_copy', $detail->id_buku_copy)
+                            ->update(['status' => 'borrowed']);
                     }
                 }
 
-                // kalau ditolak → set semua detail jadi ditolak & copy buku dikembalikan tersedia
                 if ($newStatus === 'rejected') {
-                    foreach ($peminjaman->detailPeminjaman as $detail) {
-                        $detail->update(['status' => 'returned']);
-                        $copy = CopyBuku::find($detail->id_buku_copy);
-                        if ($copy) {
-                            $copy->update(['status' => 'available']);
-                        }
+                    foreach ($details as $detail) {
+                        DetailPeminjaman::where('nomor_pinjam', $detail->nomor_pinjam)
+                            ->where('id_buku_copy', $detail->id_buku_copy)
+                            ->update(['status' => 'rejected']);
+
+                        CopyBuku::where('id_buku_copy', $detail->id_buku_copy)
+                            ->update(['status' => 'available']);
                     }
                 }
 
+                return response()->json([
+                    'status'  => true,
+                    'message' => "Status peminjaman $nomor_pinjam berhasil diperbarui.",
+                    'data'    => $peminjaman->fresh('detailPeminjaman')
+                ]);
             });
-
-            return response()->json([
-                'status' => true,
-                'message' => "Status peminjaman $nomor_pinjam berhasil diperbarui.",
-                'data' => $peminjaman->fresh('detailPeminjaman')
-            ]);
-
-        }catch(Exception $e){
+        } catch (\Throwable $e) {
             return response()->json([
                 'status'  => false,
                 'message' => 'Gagal memperbarui status peminjaman: ' . $e->getMessage(),
                 'data'    => []
             ], 500);
         }
-       
     }
 
     public function laporanPeminjamanPerHari(Request $request)
