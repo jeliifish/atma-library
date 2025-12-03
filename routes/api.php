@@ -59,6 +59,11 @@ Route::middleware(['auth:sanctum', MemberMiddleware::class])->prefix('member')->
     Route::put('/peminjaman/kembaliSemua', [AuthController::class, 'returnAllBooks']);
 
     //route pembayaran
+    Route::get('/denda', [AuthController::class, 'showUnpaidFineDetails']); // daftar denda belum dibayar
+    Route::post('/denda/bayar', [PembayaranController::class, 'bayarDenda']); // bayar denda
+
+    route::get('/peminjaman/riwayat', [AuthController::class, 'getBorrowedHistory']); //
+
     Route::get('/denda', [PembayaranController::class, 'daftarDenda']);
     Route::post('/denda/bayar', [PembayaranController::class, 'bayarDenda']);
     Route::get('/denda/riwayat', [PembayaranController::class, 'riwayatPembayaran']);
@@ -86,6 +91,7 @@ Route::middleware(['auth:sanctum', PetugasMiddleware::class])->prefix('petugas')
     Route::get('/peminjaman', [PeminjamanController::class, 'index']);
     Route::get('/peminjaman/{nomor_pinjam}', [PeminjamanController::class, 'show']);
     Route::put('/peminjaman/{nomor_pinjam}/update', [PeminjamanController::class, 'updateStatus']);
+    Route::get('/peminjaman-per-hari', [PeminjamanController::class, 'laporanPeminjamanPerHari']);
 
     Route::get('/pendingRequests', [AuthController::class, 'pendingRequests']);
 
