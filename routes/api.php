@@ -91,6 +91,7 @@ Route::middleware(['auth:sanctum', PetugasMiddleware::class])->prefix('petugas')
     Route::get('/peminjaman', [PeminjamanController::class, 'index']);
     Route::get('/peminjaman/{nomor_pinjam}', [PeminjamanController::class, 'show']);
     Route::put('/peminjaman/{nomor_pinjam}/update', [PeminjamanController::class, 'updateStatus']);
+    Route::get('/peminjaman-per-hari', [PeminjamanController::class, 'laporanPeminjamanPerHari']);
 
     Route::get('/pendingRequests', [AuthController::class, 'pendingRequests']);
 

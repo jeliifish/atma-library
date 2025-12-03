@@ -11,6 +11,7 @@ class Buku extends Model
     protected $primaryKey = 'id_buku';
     public $incrementing = false;
     public $timestamps = false;
+    protected $appends = ['stok'];
 
     protected $fillable = [
         'judul',
@@ -61,6 +62,11 @@ class Buku extends Model
     {
         return $this->belongsToMany(Kategori::class, 'buku_kategori', 'id_buku', 'id_kategori')
         ->using(BukuKategori::class);
+    }
+
+    public function getStokAttribute()
+    {
+        return $this->copyBuku()->where('status', 'available')->count();
     }
 
 }

@@ -9,6 +9,8 @@ use Illuminate\Http\Request;
 use App\Models\DetailPeminjaman;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
+use Carbon\Carbon;
+use Carbon\CarbonPeriod;
 
 class PeminjamanController extends Controller
 {
@@ -226,6 +228,58 @@ class PeminjamanController extends Controller
                 'data'    => []
             ], 500);
         }
+    }
+
+    public function laporanPeminjamanPerHari(Request $request)
+    {
+        // Hanya petugas yang boleh akses laporan
+        $petugas = Auth::guard('petugas')->user();
+        if (!$petugas) {
+            return response()->json([
+                'status'  => false,
+                'message' => 'Unauthorized. Hanya petugas yang dapat melihat laporan.',
+            ], 403);
+        }
+
+        $start = $request->query('start')
+            ? Carbon::parse($request->query('start'))->startOfDay()
+            : now()->subDays(6)->startOfDay();
+
+        $end = $request->query('end')
+            ? Carbon::parse($request->query('end'))->endOfDay()
+            : now()->endOfDay();
+
+        $rows = Peminjaman::select(
+                DB::raw('DATE(tgl_pinjam) as tanggal'),
+                DB::raw('COUNT(*) as total')
+            )
+            ->whereBetween('tgl_pinjam', [$start, $end])
+            ->where('status', '!=', 'draft')     // supaya draft nggak ikut ke laporan
+            ->groupBy(DB::raw('DATE(tgl_pinjam)'))
+            ->orderBy('tanggal')
+            ->get()
+            ->keyBy('tanggal'); // jadi array dengan key = 'YYYY-MM-DD'
+
+        $period = CarbonPeriod::create($start, $end);
+        $data = [];
+
+        foreach ($period as $date) {
+            $tanggal = $date->toDateString(); // format: 2025-12-02
+            $data[] = [
+                'tanggal' => $tanggal,
+                'total'   => isset($rows[$tanggal]) ? (int)$rows[$tanggal]->total : 0,
+            ];
+        }
+
+        return response()->json([
+            'status'  => true,
+            'message' => 'Laporan peminjaman per hari.',
+            'data'    => $data,
+            'meta'    => [
+                'start' => $start->toDateString(),
+                'end'   => $end->toDateString(),
+            ],
+        ]);
     }
 
 }
