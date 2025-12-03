@@ -338,7 +338,7 @@ class AuthController extends Controller
                         ->where('id_buku_copy', $detail->id_buku_copy)
                         ->update([
                             'status'      => 'returned',
-                            'tgl_kembali' => now(),
+                            'tgl_kembali' => now()->addDays(8),
                         ]);
 
                     // ubah copy menjadi available
@@ -347,7 +347,7 @@ class AuthController extends Controller
 
                     // cek denda
                     $due = Carbon::parse($detail->peminjaman->tgl_kembali)->startOfDay();
-                    $now = Carbon::now()->startOfDay();
+                    $now = Carbon::now()->startOfDay()->addDays(8);
                     $hariTelat = max(0, $due->diffInDays($now, false));
 
                     if ($hariTelat > 0) {
@@ -584,63 +584,4 @@ class AuthController extends Controller
             ], 500);
         }
     }
-
-    public function showUnpaidFineDetails()
-    {
-        $member = Auth::guard('member')->user();
-
-        if (!$member) {
-            return response()->json([
-                'status' => false,
-                'message' => 'Member tidak terautentikasi.'
-            ], 401);
-        }
-
-        // Ambil semua denda yang statusnya 'unpaid' milik member ini
-        $unpaidFines = Denda::where('status', 'unpaid')
-            ->whereHas('peminjaman', function($q) use ($member) {
-                $q->where('id_member', $member->id_member);
-            })
-            // Tambahkan relasi untuk mendapatkan detail buku (CopyBuku -> Buku) dan Peminjaman
-            ->with(['copyBuku.buku', 'peminjaman']) 
-            ->get();
-            
-        // Hitung total keseluruhan denda
-        $totalUnpaidFine = $unpaidFines->sum('total_denda');
-
-        // Mengelompokkan berdasarkan nomor pinjam untuk tampilan yang lebih terstruktur di frontend
-        $groupedFines = $unpaidFines->groupBy('nomor_pinjam')->map(function ($items, $nomor_pinjam) {
-            
-            // Mengambil tanggal jatuh tempo dari objek Peminjaman pertama dalam grup
-            $tgl_jatuh_tempo = $items->first()->peminjaman->tgl_kembali ?? null; 
-            
-            return [
-                'nomor_pinjam' => $nomor_pinjam,
-                'tgl_jatuh_tempo' => $tgl_jatuh_tempo,
-                'total_denda_pinjaman' => $items->sum('total_denda'),
-                'books' => $items->map(function ($denda) {
-                    return [
-                        'id_denda' => $denda->id_denda,
-                        'judul' => $denda->copyBuku->buku->judul ?? 'N/A',
-                        'penulis' => $denda->copyBuku->buku->penulis ?? 'N/A',
-                        'id_buku_copy' => $denda->id_buku_copy,
-                        'hari_telat' => $denda->hari_telat,
-                        'denda_per_buku' => $denda->total_denda,
-                        'status' => $denda->status,
-                    ];
-                }),
-            ];
-        })->values();
-
-        return response()->json([
-            'status' => true,
-            'message' => 'Detail denda yang belum dibayar berhasil dimuat.',
-            'total_denda_keseluruhan' => $totalUnpaidFine,
-            'data' => $groupedFines
-        ]);
-    }
-
-
-
-
 }
