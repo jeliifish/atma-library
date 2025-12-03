@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use App\Models\Petugas;
+use Illuminate\Support\Facades\Hash;  
 
 class PetugasSeeder extends Seeder
 {
@@ -13,7 +14,7 @@ class PetugasSeeder extends Seeder
         Petugas::create([
             'nama'           => 'Admin Perpustakaan',
             'username'       => 'adminperpus',
-            'password'       => 'admin123',   // otomatis di-hash
+            'password'       =>  Hash::make('admin123'),  // otomatis di-hash
             'alamat'         => 'Yogyakarta',
             'email'          => 'admin@library.com',
             'no_telp'        => '081234567001',
@@ -44,7 +45,7 @@ class PetugasSeeder extends Seeder
             Petugas::create([
                 'nama'           => $p['nama'],
                 'username'       => $p['username'],
-                'password'       => 'petugas123', // hashed otomatis
+                'password'       => Hash::make('petugas123'),
                 'alamat'         => $p['alamat'],
                 'email'          => $p['email'],
                 'no_telp'        => $p['no_telp'],
