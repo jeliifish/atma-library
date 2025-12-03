@@ -57,9 +57,11 @@ Route::middleware(['auth:sanctum', MemberMiddleware::class])->prefix('member')->
     Route::put('/peminjaman/kembaliSemua', [AuthController::class, 'returnAllBooks']);
 
     //route pembayaran
-    Route::get('/denda', [PembayaranController::class, 'daftarDenda']); // daftar denda belum dibayar
+    Route::get('/denda', [AuthController::class, 'showUnpaidFineDetails']); // daftar denda belum dibayar
     Route::post('/denda/bayar', [PembayaranController::class, 'bayarDenda']); // bayar denda
-    Route::get('/denda/riwayat', [PembayaranController::class, 'riwayatPembayaran']); // riwayat pembayaran
+
+    route::get('/peminjaman/riwayat', [AuthController::class, 'getBorrowedHistory']); //
+
 });
 
 //route petugas /api/petugas/...
