@@ -233,46 +233,38 @@ class BukuController extends Controller
         }
     }
 
-    public function showBukuByKategori(Request $request){
+    public function showBukuByKategori(Request $request)
+    {
         try{
-            $validated = $request->validate([
-                'id_kategori' => 'required',
-                'id_kategori.*' => 'string|exists:kategori,id_kategori'
-            ], [
-                'id_kategori.required' => 'ID kategori wajib diisi.',
-                'id_kategori.exists' => 'Kategori tidak ditemukan.'
+            $request->validate([
+                'kategori' => 'required|string'
             ]);
 
-            $id_kategori = $validated['id_kategori'];
+            $namaKategori = $request->kategori;
 
-            // Ambil semua buku yang punya minimal salah satu kategori tersebut
-          $buku = Buku::whereHas('kategori', function ($q) use ($id_kategori) {
-                $q->whereIn('kategori.id_kategori', $id_kategori);
-            })
-            ->with('kategori')
-            ->get();
+            // Cari ID kategori berdasarkan nama
+            $kategori = \App\Models\Kategori::where('nama_kategori', $namaKategori)->first();
 
-            if($buku->isEmpty()){
+            if (!$kategori) {
                 return response()->json([
                     'status' => true,
-                    'message' => 'Belum ada buku di kategori ini.',
+                    'message' => 'Kategori tidak ditemukan.',
                     'data' => []
                 ], 200);
             }
 
+            // Ambil buku berdasarkan id_kategori
+            $buku = Buku::whereHas('kategori', function ($q) use ($kategori) {
+                    $q->where('kategori.id_kategori', $kategori->id_kategori);
+                })
+                ->with('kategori')
+                ->get();
+
             return response()->json([
                 'status' => true,
-                'message' => 'Belum ada buku di kategori ini.',
+                'message' => 'Buku berhasil diambil.',
                 'data' => $buku
             ], 200);
-
-
-        }catch (ValidationException $e) {
-            return response()->json([
-                'status' => false,
-                'message' => 'Validasi gagal.',
-                'errors' => $e->errors()
-            ], 422);
 
         } catch (\Exception $e) {
             return response()->json([
