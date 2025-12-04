@@ -102,6 +102,7 @@ Route::middleware(['auth:sanctum', PetugasMiddleware::class])->prefix('petugas')
 
     // REPORTS untuk petugas
     Route::get('/reports/summary', [ReportController::class, 'summary']);
+    Route::get('/reports/borrowing-by-category', [ReportController::class, 'borrowingByCategory']);
     Route::get('/reports/loans', [ReportController::class, 'loans']);
     Route::get('/reports/fines', [ReportController::class, 'fines']);
 
