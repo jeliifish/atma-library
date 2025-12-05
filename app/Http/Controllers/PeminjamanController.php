@@ -382,4 +382,53 @@ class PeminjamanController extends Controller
         }
     }
 
+    
+    public function destroyPending($nomor_pinjam)
+    {
+        try {
+            $petugas = Auth::guard('petugas')->user();
+            if (!$petugas) {
+                return response()->json([
+                    'status'  => false,
+                    'message' => 'Akses ditolak. Hanya petugas yang dapat menghapus peminjaman.'
+                ], 403);
+            }
+
+            return DB::transaction(function () use ($nomor_pinjam) {
+                $peminjaman = Peminjaman::with('detailPeminjaman')
+                    ->where('nomor_pinjam', $nomor_pinjam)
+                    ->where('status', 'pending')
+                    ->lockForUpdate()
+                    ->first();
+
+                if (!$peminjaman) {
+                    return response()->json([
+                        'status'  => false,
+                        'message' => 'Peminjaman pending tidak ditemukan.',
+                    ], 404);
+                }
+
+                foreach ($peminjaman->detailPeminjaman as $detail) {
+                    CopyBuku::where('id_buku_copy', $detail->id_buku_copy)
+                        ->update(['status' => 'available']);
+                }
+
+                DetailPeminjaman::where('nomor_pinjam', $nomor_pinjam)->delete();
+                $peminjaman->delete();
+
+                return response()->json([
+                    'status'  => true,
+                    'message' => "Peminjaman pending {$nomor_pinjam} berhasil dihapus.",
+                    'data'    => null
+                ]);
+            });
+        } catch (\Throwable $e) {
+            return response()->json([
+                'status'  => false,
+                'message' => 'Gagal menghapus peminjaman pending: ' . $e->getMessage(),
+                'data'    => []
+            ], 500);
+        }
+    }
+
 }

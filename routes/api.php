@@ -94,6 +94,7 @@ Route::middleware(['auth:sanctum', PetugasMiddleware::class])->prefix('petugas')
     Route::put('/peminjaman/approve/all', [PeminjamanController::class, 'updateStatusBulk']);
     Route::get('/peminjaman-per-hari', [PeminjamanController::class, 'laporanPeminjamanPerHari']);
     Route::get('/pendingRequests', [AuthController::class, 'pendingRequests']);
+    Route::delete('peminjaman/pending-destroy/{nomor_pinjam}', [PeminjamanController::class, 'destroyPending']);
 
     // MEMBER LIST API (dipakai halaman MemberList)
     Route::get('/members', [MemberController::class, 'index']);
