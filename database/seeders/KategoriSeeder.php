@@ -7,17 +7,44 @@ use Illuminate\Support\Facades\DB;
 
 class KategoriSeeder extends Seeder
 {
-    public function run(): void
+    public function run()
     {
+        // List kategori tanpa ID
         $kategoriList = [
-            [ 'id_kategori' => 'KTG0001', 'nama_kategori' => 'Fiction' ],
-            [ 'id_kategori' => 'KTG0002', 'nama_kategori' => 'Science' ],
-            [ 'id_kategori' => 'KTG0003', 'nama_kategori' => 'History' ],
-            [ 'id_kategori' => 'KTG0004', 'nama_kategori' => 'Fantasy' ],
-            [ 'id_kategori' => 'KTG0005', 'nama_kategori' => 'Technology' ],
-            [ 'id_kategori' => 'KTG0006', 'nama_kategori' => 'Education' ],
+            'Fantasy',
+            'Science Fiction',
+            'Dystopian',
+            'Horror',
+            'Mystery / Thriller',
+            'Adventure',
+            'Action',
+            'Contemporary Fiction',
+            'Historical Fiction',
+            'Classic Literature',
+            'Literary Fiction',
+            'Mythology',
+            'Memoir / Biography',
+            'Self-Help',
+            'Personal Development',
+            'Psychology',
+            'Economics',
+            'History',
+            'Philosophy',
+            'Business / Entrepreneurship',
+            'Political Commentary',
         ];
 
-        DB::table('kategori')->insert($kategoriList);
+        $insertData = [];
+
+        foreach ($kategoriList as $index => $nama) {
+            $num = str_pad($index + 1, 4, '0', STR_PAD_LEFT);
+
+            $insertData[] = [
+                'id_kategori' => "KTG{$num}",
+                'nama_kategori' => $nama,
+            ];
+        }
+
+        DB::table('kategori')->insert($insertData);
     }
 }

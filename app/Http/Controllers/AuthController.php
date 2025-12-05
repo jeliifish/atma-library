@@ -519,7 +519,8 @@ class AuthController extends Controller
                     'b.url_foto_cover',
 
                     'm.id_member',
-                    'm.nama as member_name',
+                    'm.url_foto_profil',
+                    'm.nama',
                 ])
                 ->get();
 

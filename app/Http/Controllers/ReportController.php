@@ -145,9 +145,9 @@ class ReportController extends Controller
                     'tgl_bayar'     => $p->tgl_bayar,
                     'nama_member'   => optional($p->member)->nama,
                     'total'         => $p->total,
-                    'total_bayar'   => $p->total,     // alias for FE
+                    'total_bayar'   => $p->total,     
                     'metode'        => $p->metode,
-                    'keterangan'    => $p->metode,    // fallback display
+                    'keterangan'    => $p->metode,    
                     'detail'        => $p->detailPembayaran->map(function ($d) {
                         return [
                             'id_detail_pembayaran' => $d->id_detail_pembayaran,
