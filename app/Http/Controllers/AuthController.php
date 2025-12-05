@@ -318,7 +318,7 @@ class AuthController extends Controller
                         $q->where('id_member', $member->id_member)
                         ->where('status', 'approved');   // hanya peminjaman yg aktif
                     })
-                    ->where('status', 'borrowed')          // ⬅️ hanya borrowed
+                    ->where('status', 'borrowed')        
                     ->lockForUpdate()
                     ->get();
 
@@ -374,7 +374,7 @@ class AuthController extends Controller
 
                     // cek masih ada detail yg statusnya aktif (pending/borrowed) atau tidak
                     $masihAktif = DetailPeminjaman::where('nomor_pinjam', $nomor)
-                        ->whereIn('status', ['pending', 'borrowed'])   // ⬅️ JELAS: yg kita anggap "masih jalan"
+                        ->whereIn('status', ['pending', 'borrowed'])   
                         ->exists();
 
                     if (!$masihAktif) {
