@@ -237,10 +237,11 @@ class AuthController extends Controller
                     ->where('id_buku_copy', $detail->id_buku_copy)
                     ->update([
                         'status'      => 'returned',
-                        'tgl_kembali' => now()->addDays(8), // tgl real dikembalikan
+                        'tgl_kembali' => now(), 
+                        //now()->addDays(8) kalau mau cek denda
                     ]);
 
-                // update copy → available
+                // update copy jadi available
                 $copy = CopyBuku::where('id_buku_copy', $validated['id_buku_copy'])
                     ->lockForUpdate()
                     ->first();
@@ -250,7 +251,8 @@ class AuthController extends Controller
 
                 // hitung denda
                 $due = Carbon::parse($peminjaman->tgl_kembali)->startOfDay();
-                $now = Carbon::now()->addDays(8)->startOfDay();
+                $now = Carbon::now()->startOfDay();
+                ////addDays(8) kalau mau cek denda
                 $hariTelat = max(0, $due->diffInDays($now, false));
 
                 if ($hariTelat > 0) {
@@ -338,7 +340,8 @@ class AuthController extends Controller
                         ->where('id_buku_copy', $detail->id_buku_copy)
                         ->update([
                             'status'      => 'returned',
-                            'tgl_kembali' => now()->addDays(8),
+                            'tgl_kembali' => now(),
+                            //now()->addDays(8) kalau mau cek denda
                         ]);
 
                     // ubah copy menjadi available
@@ -347,7 +350,8 @@ class AuthController extends Controller
 
                     // cek denda
                     $due = Carbon::parse($detail->peminjaman->tgl_kembali)->startOfDay();
-                    $now = Carbon::now()->startOfDay()->addDays(8);
+                    $now = Carbon::now()->startOfDay();
+                    ////now()->startOfDay()->addDays(8) kalau mau cek denda
                     $hariTelat = max(0, $due->diffInDays($now, false));
 
                     if ($hariTelat > 0) {

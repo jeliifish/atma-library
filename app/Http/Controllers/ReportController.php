@@ -25,9 +25,9 @@ class ReportController extends Controller
         return response()->json([
             'total_buku'           => $totalBuku,
             'total_member'         => $totalMember,
-            'detail_aktif'         => $detailAktif,      // ongoing borrowed copies
+            'detail_aktif'         => $detailAktif,     
             'peminjaman_returned'  => $peminjamanReturned,
-            'total_denda_bayar'    => $totalBayar,       // alias to match FE
+            'total_denda_bayar'    => $totalBayar,     
             'total_bayar'          => $totalBayar,
         ]);
     }
@@ -108,7 +108,6 @@ class ReportController extends Controller
         ]);
     }
 
-    // daftar peminjaman terbaru (misal 20 terakhir)
     public function loans()
     {
         $peminjaman = Peminjaman::with(['member', 'detailPeminjaman'])
@@ -123,7 +122,7 @@ class ReportController extends Controller
                     'status'         => $p->status,
                     'nama_member'    => optional($p->member)->nama,
                     'jumlah_buku'    => $p->detailPeminjaman->count(),
-                    'total_denda'    => $p->total_denda ?? 0, // sesuaikan field kalau beda
+                    'total_denda'    => $p->total_denda ?? 0,
                 ];
             });
 
