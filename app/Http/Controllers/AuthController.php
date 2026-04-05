@@ -32,7 +32,7 @@ class AuthController extends Controller
                     'id'    => $member->id_member,
                     'nama'  => $member->nama,
                     'email' => $member->email,
-                    'role'  => 'member',
+                    'role'  => $member->role,
                     'url_foto_profil' => $member->url_foto_profil
                 ]
             ]);
@@ -49,7 +49,7 @@ class AuthController extends Controller
                     'id'    => $petugas->id_petugas,
                     'nama'  => $petugas->nama,
                     'email' => $petugas->email,
-                    'role'  => 'petugas',
+                    'role'  => $petugas->role,
                     'url_foto_profil' => $petugas->url_foto_profil
                 ]
             ]);

@@ -76,6 +76,7 @@ class MemberController extends Controller
             $data['tgl_daftar']      = now()->toDateString();
             $data['status']          = 'aktif';
             $data['url_foto_profil'] = 'images/default-profile.jpeg';
+            $data['role'] = 'member';
 
             $member = Member::create($data);
 

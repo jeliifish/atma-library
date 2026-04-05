@@ -22,6 +22,7 @@ return new class extends Migration
             $table->date('tgl_daftar');
             $table->string('url_foto_profil')->nullable();;
             $table->enum('status', ['aktif', 'cuti']);
+            $table->enum('role', ['member', 'petugas'])->default('petugas');
             $table->timestamps();
         });
     }
